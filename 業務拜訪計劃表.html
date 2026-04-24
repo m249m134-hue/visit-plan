@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>業務拜訪計劃表</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{--blue:#1a73e8;--blue-d:#0d47a1;--green:#0f9d58;--orange:#e37400;--red:#d93025;--purple:#7b1fa2;--teal:#00897b;--bg:#f0f2f5;--card:#fff;--border:#e0e0e0;--text:#333;--text2:#666;--text3:#999}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Microsoft JhengHei','Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{background:linear-gradient(135deg,var(--blue),var(--blue-d));color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.header h1{font-size:18px;font-weight:700}
+.header-info{font-size:12px;opacity:.85}
+.container{max-width:960px;margin:0 auto;padding:20px 16px}
+.btn{padding:10px 20px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--blue);color:#fff}.btn-primary:hover{background:var(--blue-d)}
+.btn-success{background:var(--green);color:#fff}.btn-success:hover{background:#0b7a42}
+.btn-outline{background:#fff;color:var(--blue);border:2px solid var(--blue)}.btn-outline:hover{background:#e8f0fe}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}.btn-ghost:hover{background:#f5f5f5}
+.btn-danger{background:var(--red);color:#fff}
+.btn-purple{background:var(--purple);color:#fff}.btn-purple:hover{background:#6a1b9a}
+.btn-teal{background:var(--teal);color:#fff}.btn-teal:hover{background:#00796b}
+.btn-lg{padding:16px 32px;font-size:16px;border-radius:12px}
+
+.login-wrap{display:flex;justify-content:center;align-items:center;min-height:70vh}
+.login-box{background:var(--card);border-radius:16px;padding:40px;max-width:360px;width:90%;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.1)}
+.login-box .icon{font-size:56px;margin-bottom:12px}
+.login-box h2{font-size:20px;margin-bottom:4px}
+.login-box p{font-size:13px;color:var(--text2);margin-bottom:20px}
+.login-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-size:16px;text-align:center;letter-spacing:8px;margin-bottom:12px;transition:border-color .2s}
+.login-input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,115,232,.12)}
+.login-input.error{border-color:var(--red);animation:shake .4s}
+.login-err{color:var(--red);font-size:13px;margin-bottom:10px;min-height:20px}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+
+.steps{display:flex;justify-content:center;gap:6px;margin-bottom:24px;flex-wrap:wrap}
+.step{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;background:#e8eaed;color:var(--text3);transition:all .2s}
+.step.active{background:var(--blue);color:#fff}.step.done{background:#e6f4ea;color:var(--green)}
+.step-arrow{color:var(--text3);font-size:16px;display:flex;align-items:center}
+
+.date-header{text-align:center;margin-bottom:20px}
+.date-header h2{font-size:18px;color:var(--blue)}
+.date-header p{font-size:13px;color:var(--text2);margin-top:4px}
+.week-grid{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.day-card{background:var(--card);border-radius:12px;padding:16px 12px;text-align:center;cursor:pointer;transition:all .2s;box-shadow:0 1px 4px rgba(0,0,0,.08);border:2px solid transparent;flex:1;min-width:105px;max-width:130px}
+.day-card:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,.1)}
+.day-card.weekend{background:#fef7e0}.day-card.weekend .dow{color:var(--orange)}
+.day-card.holiday{background:#fce8e6;border-color:#f8d7da}.day-card.holiday .dow{color:var(--red)}.holiday-tag{font-size:10px;color:var(--red);font-weight:700;margin-top:2px}
+.day-card .dow{font-size:14px;font-weight:700;color:var(--blue)}
+.day-card .date{font-size:11px;color:var(--text2);margin-top:1px}
+.day-card .count{font-size:24px;font-weight:700;color:var(--green);margin-top:6px}
+.day-card .count.zero{color:var(--text3)}
+.day-card .count-lbl{font-size:10px;color:var(--text3)}
+
+.plan-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.plan-header h2{font-size:16px;color:var(--blue)}
+.region-list{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.region-chip{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:600;background:#e8eaed;color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+.region-chip:hover{background:#d5d8dc}.region-chip.active{background:var(--blue);color:#fff}
+.region-chip .cnt{font-size:11px;opacity:.7;margin-left:3px}
+.tab-bar{display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border)}
+.tab-item{padding:10px 20px;font-size:14px;font-weight:600;color:var(--text2);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .15s}
+.tab-item:hover{color:var(--text)}
+.tab-item.active{color:var(--blue);border-bottom-color:var(--blue)}
+.tab-item.active.purple{color:var(--purple);border-bottom-color:var(--purple)}
+.store-list{background:var(--card);border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);overflow:hidden}
+.store-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #f0f0f0;cursor:pointer;transition:background .1s}
+.store-item:hover{background:#f8f9fb}.store-item.checked{background:#e6f4ea}
+.store-item input[type=checkbox]{width:18px;height:18px;accent-color:var(--green);cursor:pointer;flex-shrink:0}
+.store-info{flex:1;min-width:0}
+.store-name{font-size:14px;font-weight:600}
+.store-detail{font-size:11px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.store-badges{display:flex;gap:4px;flex-shrink:0;flex-wrap:wrap}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:10px;font-weight:700}
+.b-cat{background:#e8f0fe;color:var(--blue)}
+.b-A{background:#fce8e6;color:var(--red)}.b-B{background:#fef7e0;color:var(--orange)}.b-C{background:#e6f4ea;color:var(--green)}.b-D{background:#e8eaed;color:#666}
+.b-listed{background:#e6f4ea;color:var(--green)}.b-unlisted{background:#fce8e6;color:var(--red)}.b-new{background:#f3e8fd;color:var(--purple)}
+.note-row{display:flex;gap:8px;padding:4px 16px 10px 48px}
+.note-row input{flex:1;padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px}
+.note-row input:focus{outline:none;border-color:var(--blue)}
+.newstore-section{background:var(--card);border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:20px}
+.newstore-form{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.newstore-form input{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;flex:1;min-width:120px}
+.newstore-form input:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 2px rgba(123,31,162,.12)}
+.newstore-item{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #f0f0f0}
+.newstore-item:last-child{border:none}
+.newstore-del{background:none;border:none;font-size:16px;cursor:pointer;color:var(--red);padding:4px 8px;border-radius:6px}
+.newstore-del:hover{background:#fce8e6}
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.filter-bar select,.filter-bar input{padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--blue)}
+.sum-card{background:var(--card);border-radius:10px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,.08);margin-bottom:10px}
+.sum-card h4{font-size:14px;color:var(--blue);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #f0f0f0}
+.sum-store{font-size:13px;padding:4px 0;color:var(--text2)}.sum-store strong{color:var(--text)}
+.sum-new{color:var(--purple);font-weight:600}
+.bottom-bar{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--border);padding:12px 24px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 -2px 8px rgba(0,0,0,.08);z-index:50}
+.bottom-info{font-size:13px;color:var(--text2)}.bottom-actions{display:flex;gap:8px}
+.draft-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;background:#e6f4ea;color:var(--green)}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);align-items:center;justify-content:center;z-index:200;display:none}
+.modal-overlay.show{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:32px;max-width:440px;width:90%;text-align:center;box-shadow:0 20px 40px rgba(0,0,0,.2)}
+.modal h3{font-size:18px;margin-bottom:8px}
+.modal p{font-size:14px;color:var(--text2);margin-bottom:20px;white-space:pre-line}
+.modal .btn-row{display:flex;gap:10px;justify-content:center}
+.empty-msg{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.page{display:none}.page.active{display:block}
+
+/* Allen page */
+.upload-zone{border:2px dashed #c4c9d4;border-radius:12px;padding:40px;text-align:center;background:#fafbfc;cursor:pointer;transition:all .2s;margin-bottom:16px}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--teal);background:#e0f2f1}
+.upload-zone .icon{font-size:40px;margin-bottom:8px}
+.upload-zone p{color:var(--text2);font-size:14px}
+.upload-zone .hint{font-size:12px;color:var(--text3);margin-top:4px}
+.order-stats{display:flex;gap:12px;margin:16px 0;flex-wrap:wrap}
+.order-stat{background:var(--card);border-radius:10px;padding:14px 18px;flex:1;min-width:120px;box-shadow:0 1px 4px rgba(0,0,0,.08);text-align:center}
+.order-stat .num{font-size:24px;font-weight:700;color:var(--teal)}.order-stat .num.red{color:var(--red)}
+.order-stat .lbl{font-size:11px;color:var(--text3);margin-top:2px}
+.match-table{width:100%;border-collapse:collapse;background:var(--card);border-radius:10px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.08)}
+.match-table th{background:#f8f9fb;padding:10px 12px;text-align:left;font-size:12px;font-weight:700;color:var(--text2);border-bottom:2px solid var(--border)}
+.match-table td{padding:8px 12px;font-size:13px;border-bottom:1px solid #f0f0f0}
+.match-table tr:hover{background:#f8f9fb}
+.match-ok{color:var(--green);font-weight:600}.match-fail{color:var(--red);font-weight:600}
+
+.rep-card{background:var(--card);border-radius:12px;padding:20px;flex:1;min-width:280px;box-shadow:0 1px 6px rgba(0,0,0,.08);border-left:4px solid var(--blue)}
+.rep-card h3{font-size:16px;color:var(--blue);margin-bottom:10px}
+.rep-card .status-tag{display:inline-block;padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;margin-bottom:10px}
+.rep-card .tag-done{background:#e6f4ea;color:var(--green)}.rep-card .tag-pending{background:#fef7e0;color:var(--orange)}.rep-card .tag-empty{background:#fce8e6;color:var(--red)}
+.rep-day{display:flex;justify-content:space-between;padding:4px 0;font-size:13px;border-bottom:1px solid #f5f5f5}
+.rep-day .day-name{color:var(--text2)}.rep-day .day-cnt{font-weight:700}
+.rep-day .day-cnt.has{color:var(--green)}.rep-day .day-cnt.zero{color:var(--text3)}
+@media(max-width:600px){.week-grid{flex-direction:column;align-items:stretch}.day-card{max-width:none}.bottom-bar{flex-direction:column;gap:8px}.newstore-form{flex-direction:column}.order-stats{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div><h1>📋 業務拜訪計劃表</h1><div class="header-info" id="headerInfo">請登入</div></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span class="draft-badge" id="draftBadge" style="display:none">💾 已暫存</span>
+    <button class="btn btn-ghost" onclick="resetMyData()" id="btnReset" style="color:#fce8e6;border-color:rgba(255,255,255,.3);display:none">🔄 刷新我的數據</button>
+    <button class="btn btn-ghost" onclick="logout()" id="btnLogout" style="color:#fff;border-color:rgba(255,255,255,.3);display:none">🔒 登出</button>
+  </div>
+</div>
+
+<div class="container"><div class="steps" id="stepBar">
+  <div class="step active" data-step="0">🔒 登入</div><span class="step-arrow">›</span>
+  <div class="step" data-step="2">📅 選擇日期</div><span class="step-arrow">›</span>
+  <div class="step" data-step="3">🏪 安排拜訪</div><span class="step-arrow">›</span>
+  <div class="step" data-step="4">📊 確認送出</div>
+</div></div>
+
+<!-- PAGE 0: LOGIN -->
+<div class="page active" id="page0"><div class="login-wrap"><div class="login-box">
+  <div class="icon">🔐</div><h2>業務系統登入</h2><p>請輸入您的密碼</p>
+  <input type="password" class="login-input" id="pwdInput" maxlength="10" placeholder="•••••" onkeydown="if(event.key==='Enter')doLogin()">
+  <div class="login-err" id="loginErr"></div>
+  <button class="btn btn-primary btn-lg" style="width:100%" onclick="doLogin()">登入</button>
+</div></div></div>
+
+<!-- PAGE 2: DATE (sales rep) -->
+<div class="page" id="page2"><div class="container">
+  <div class="date-header"><h2 id="repTitle"></h2><p id="weekLabel"></p></div>
+  <div class="week-grid" id="weekGrid"></div>
+  <div style="text-align:center;margin-top:20px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="btn btn-primary btn-lg" onclick="goStep(4)">📊 查看整週摘要</button>
+  </div>
+</div></div>
+
+<!-- PAGE 3: STORES (sales rep) -->
+<div class="page" id="page3"><div class="container">
+  <div class="plan-header"><h2 id="planTitle"></h2>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-ghost" onclick="goStep(2)">← 返回日期</button>
+      <button class="btn btn-success" onclick="saveDraft()">💾 暫存</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab-item active" id="tabStores" onclick="switchTab('stores')">🏪 既有店家</div>
+    <div class="tab-item purple" id="tabNewStore" onclick="switchTab('newstore')">🆕 小店開發</div>
+  </div>
+  <div id="panelStores">
+    <div class="filter-bar">
+      <select id="fCat" onchange="renderStores()"><option value="">全部通路</option><option value="東森寵物">東森寵物</option><option value="魚中魚">魚中魚</option><option value="寵物公園">萬達</option><option value="小店客戶">小店客戶</option></select>
+      <select id="fGrade" onchange="renderStores()"><option value="">全部等級</option><option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option></select>
+      <select id="fListed" onchange="renderStores()"><option value="">全部狀態</option><option value="是">已上架</option><option value="否">未上架</option></select>
+      <input type="text" id="fSearch" placeholder="🔍 搜尋店名..." oninput="renderStores()">
+    </div>
+    <div class="region-list" id="regionList"></div>
+    <div class="region-list" id="districtList" style="margin-top:-8px"></div>
+    <div class="store-list" id="storeList"></div>
+  </div>
+  <div id="panelNewStore" style="display:none">
+    <div class="newstore-section">
+      <p style="font-size:13px;color:var(--text2);margin-bottom:12px">新開發的小店，填寫店名後加入當天行程</p>
+      <div class="newstore-form">
+        <input type="text" id="nsName" placeholder="店名（必填）">
+        <input type="text" id="nsAddr" placeholder="地址（選填）">
+        <input type="text" id="nsPhone" placeholder="電話（選填）">
+        <input type="text" id="nsNote" placeholder="備註（選填）">
+        <button class="btn btn-purple" onclick="addNewStore()">＋ 加入</button>
+      </div>
+      <div id="newStoreList"></div>
+      <div id="newStoreEmpty" class="empty-msg" style="padding:20px">尚未新增小店</div>
+    </div>
+  </div>
+</div></div>
+
+<!-- PAGE 4: SUMMARY (sales rep) -->
+<div class="page" id="page4"><div class="container">
+  <div style="text-align:center;margin-bottom:16px">
+    <h2 style="font-size:18px;color:var(--blue)">📊 整週拜訪摘要</h2>
+    <p style="color:var(--text2);font-size:13px" id="summarySubtitle"></p>
+  </div>
+  <div id="summaryBody"></div>
+  <div style="text-align:center;margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button class="btn btn-outline" onclick="goStep(2)">← 返回修改</button>
+    <button class="btn btn-success btn-lg" onclick="confirmAndSend()">✅ 確認送出並下載</button>
+  </div>
+</div></div>
+
+<!-- PAGE 5: ALLEN - Dashboard + Order Upload -->
+<div class="page" id="page5"><div class="container">
+
+  <!-- 業務員填表狀態 -->
+  <div style="margin-bottom:24px">
+    <h2 style="font-size:20px;color:var(--blue);text-align:center;margin-bottom:12px">📋 業務員本週填表狀態</h2>
+    <p style="color:var(--text2);font-size:13px;text-align:center;margin-bottom:16px" id="allenWeekLabel"></p>
+    <div id="repStatusPanel" style="display:flex;gap:16px;flex-wrap:wrap"></div>
+  </div>
+
+  <hr style="border:none;border-top:2px solid var(--border);margin:24px 0">
+
+  <div style="text-align:center;margin-bottom:20px">
+    <h2 style="font-size:20px;color:var(--teal)">📦 當週成交訂單管理</h2>
+    <p style="color:var(--text2);font-size:13px;margin-top:4px">上傳訂單總表 Excel，系統自動比對三大連鎖店成交紀錄</p>
+  </div>
+
+  <div class="upload-zone" id="orderUpload" onclick="document.getElementById('orderFile').click()">
+    <div class="icon">📁</div>
+    <p><strong>上傳訂單總表</strong>（.xlsx）</p>
+    <p class="hint">系統會自動篩選 B端通路訂單，比對東森 / 魚中魚 / 萬達 / 小店客戶</p>
+    <input type="file" id="orderFile" accept=".xlsx,.xls" style="display:none" onchange="handleOrderFile(this.files[0])">
+  </div>
+
+  <div id="orderResults" style="display:none">
+    <div class="order-stats" id="orderStats"></div>
+
+    <h3 style="font-size:15px;margin:16px 0 10px;color:var(--teal)">✅ 已比對成功的訂單</h3>
+    <div style="overflow-x:auto"><table class="match-table" id="matchedTable"><thead><tr>
+      <th>訂單編號</th><th>收件人</th><th>比對門市</th><th>通路</th><th>金額</th>
+    </tr></thead><tbody id="matchedBody"></tbody></table></div>
+
+    <h3 style="font-size:15px;margin:16px 0 10px;color:var(--red)">❌ 未比對到門市（非三大連鎖 / 其他通路）</h3>
+    <div style="overflow-x:auto"><table class="match-table" id="unmatchedTable"><thead><tr>
+      <th>訂單編號</th><th>收件人</th><th>賣場</th><th>金額</th>
+    </tr></thead><tbody id="unmatchedBody"></tbody></table></div>
+
+    <div style="text-align:center;margin-top:24px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button class="btn btn-teal btn-lg" onclick="saveOrderData()">💾 儲存訂單資料</button>
+      <button class="btn btn-success btn-lg" onclick="exportAllenReport()">📥 匯出完整報表</button>
+    </div>
+  </div>
+</div></div>
+
+<div class="bottom-bar" id="bottomBar" style="display:none">
+  <div class="bottom-info" id="bottomInfo">已選 0 間</div>
+  <div class="bottom-actions">
+    <button class="btn btn-ghost" onclick="goStep(2)">← 日期</button>
+    <button class="btn btn-success" onclick="saveDraft()">💾 暫存</button>
+  </div>
+</div>
+
+<div class="modal-overlay" id="confirmModal"><div class="modal">
+  <h3>✅ 計劃完成！</h3><p id="modalMsg"></p>
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="closeModal()">確認</button>
+  </div>
+</div></div>
+
+<script>
+const ALL_STORES = [{"category": "東森寵物", "name": "文林店", "address": "台北市士林區文林路74號(狗館)", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2883-1360", "city": "台北市", "id": 0, "district": "士林區"}, {"category": "東森寵物", "name": "士林文林店", "address": "台北市士林區文林路64號(貓館)", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-2883-1359", "city": "台北市", "id": 1, "district": "士林區"}, {"category": "東森寵物", "name": "北投中和店", "address": "臺北市北投區中和街317號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-2891-2103", "city": "台北市", "id": 2, "district": "北投區"}, {"category": "東森寵物", "name": "大同民族西店", "address": "台北市大同區民族西路224、226號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-2585-8887", "city": "台北市", "id": 3, "district": "大同區"}, {"category": "東森寵物", "name": "大安通化店", "address": "台北市大安區通化街26之7號1樓", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-2732-4986", "city": "台北市", "id": 4, "district": "大安區"}, {"category": "東森寵物", "name": "大安建國南店", "address": "臺北市大安區龍圖里建國南路2段25巷1號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2700-6598", "city": "台北市", "id": 5, "district": "大安區"}, {"category": "東森寵物", "name": "大直北安店", "address": "台北市中山區北安路554巷31號1樓", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-2533-5086", "city": "台北市", "id": 6, "district": "中山區"}, {"category": "東森寵物", "name": "龜山自強西店", "address": "桃園市龜山區自強西路118.120號全棟", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "03-359-2111", "city": "桃園市", "id": 7, "district": "龜山區"}, {"category": "東森寵物", "name": "龜山復興店", "address": "", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "03-397-5001", "city": "其他", "id": 8, "district": ""}, {"category": "東森寵物", "name": "桃園巨蛋店", "address": "桃園市龜山區萬壽路二段1379號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-349-0666", "city": "桃園市", "id": 9, "district": "龜山區"}, {"category": "東森寵物", "name": "蘆竹大新店", "address": "桃園市蘆竹區大新一街29號1樓", "grade": "A", "listed": "否", "salesRep": "文峰", "phone": "03-313-6566", "city": "桃園市", "id": 10, "district": "蘆竹區"}, {"category": "東森寵物", "name": "蘆竹南昌店", "address": "桃園市蘆竹區南昌路266號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-312-0236", "city": "桃園市", "id": 11, "district": "蘆竹區"}, {"category": "東森寵物", "name": "觀音大觀店", "address": "桃園市觀音區四維路122號1樓", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-476-1008", "city": "桃園市", "id": 12, "district": "觀音區"}, {"category": "東森寵物", "name": "中壢中央東店", "address": "桃園市中壢區中央東路13號1樓、13-1號1樓", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-422-3083", "city": "桃園市", "id": 13, "district": "中壢區"}, {"category": "東森寵物", "name": "三重三和店", "address": "新北市三重區三和路2段164號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-2976-0125", "city": "新北市", "id": 14, "district": "三重區"}, {"category": "東森寵物", "name": "三重中正北店", "address": "新北市三重區中正北路119、121號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-8982-0666", "city": "新北市", "id": 15, "district": "三重區"}, {"category": "東森寵物", "name": "新莊中正店", "address": "新北市新莊區中正路102/104號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-2276-0002", "city": "新北市", "id": 16, "district": "新莊區"}, {"category": "東森寵物", "name": "永和得和店", "address": "新北市永和區得和路409號1樓", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-2928-1233", "city": "新北市", "id": 17, "district": "永和區"}, {"category": "東森寵物", "name": "土城中華店", "address": "新北市土城區中華路1段235號1樓及中央路1段318巷20號1樓", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-2261-7333", "city": "新北市", "id": 18, "district": "土城區"}, {"category": "東森寵物", "name": "新莊旗艦店", "address": "新北市新莊區中正路2號", "grade": "A", "listed": "否", "salesRep": "文峰", "phone": "02-2996-0026", "city": "新北市", "id": 19, "district": "新莊區"}, {"category": "東森寵物", "name": "板橋雨農店", "address": "新北市板橋區雨農路54號1樓", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-2250-0070", "city": "新北市", "id": 20, "district": "板橋區"}, {"category": "東森寵物", "name": "新北八里店", "address": "新北市八里區大崁里大崁里中山路一段25號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2610-0018", "city": "新北市", "id": 21, "district": "八里區"}, {"category": "東森寵物", "name": "新竹經國店", "address": "新竹市北區經國路2段19號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-534-3636", "city": "新竹市", "id": 22, "district": "北區"}, {"category": "東森寵物", "name": "新竹建興店", "address": "新竹縣建興路ㄧ段155之7", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "03-557-7673", "city": "新竹縣", "id": 23, "district": ""}, {"category": "東森寵物", "name": "竹東長春店", "address": "新竹縣竹東鎮長春路3段224號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "035-102-715", "city": "新竹縣", "id": 24, "district": "竹東鎮"}, {"category": "東森寵物", "name": "湖口中山店", "address": "新竹縣湖口鄉中山路二段212、214號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "035-903-375", "city": "新竹縣", "id": 25, "district": "湖口鄉"}, {"category": "東森寵物", "name": "竹北中正東店", "address": "新竹縣竹北市中正東路140-2、140-3號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "035-553-295", "city": "新竹縣", "id": 26, "district": "竹北市"}, {"category": "東森寵物", "name": "竹北成功店", "address": "新竹縣竹北市成功三路108號1樓", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "03-658-5189", "city": "新竹縣", "id": 27, "district": "竹北市"}, {"category": "東森寵物", "name": "頭份中華店", "address": "苗栗縣頭份鎮中華路1307號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "037-670-510", "city": "苗栗縣", "id": 28, "district": "頭份鎮"}, {"category": "東森寵物", "name": "竹南延平店", "address": "苗栗縣竹南鎮營盤里延平路三鄰166號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "037-465-579", "city": "苗栗縣", "id": 29, "district": "竹南鎮"}, {"category": "東森寵物", "name": "苗栗縣府店", "address": "苗栗縣苗栗市自治路16號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "037-263-118", "city": "苗栗縣", "id": 30, "district": "苗栗市"}, {"category": "東森寵物", "name": "苑裡中山店", "address": "苗栗縣苑裡鎮中山路243號1樓", "grade": "A", "listed": "否", "salesRep": "文峰", "phone": "03-7865611", "city": "苗栗縣", "id": 31, "district": "苑裡鎮"}, {"category": "東森寵物", "name": "宜蘭新生店", "address": "宜蘭市中山路5段223號", "grade": "A", "listed": "否", "salesRep": "文峰", "phone": "039-320-911", "city": "宜蘭縣", "id": 32, "district": ""}, {"category": "東森寵物", "name": "羅東光榮店", "address": "宜蘭縣羅東鎮光榮路112號1樓", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "039-542-077", "city": "宜蘭縣", "id": 33, "district": "羅東鎮"}, {"category": "東森寵物", "name": "吉安自強店", "address": "花蓮縣吉安鄉自強路636號、640號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "03-857-0586", "city": "花蓮縣", "id": 34, "district": "吉安鄉"}, {"category": "東森寵物", "name": "花蓮中正店", "address": "花蓮縣花蓮市主農里中正路121號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "038-346-000", "city": "花蓮縣", "id": 35, "district": "花蓮市"}, {"category": "東森寵物", "name": "玉里和平店", "address": "花蓮縣玉里鎮和平路96號1樓、2樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "038-880-029", "city": "花蓮縣", "id": 36, "district": "玉里鎮"}, {"category": "東森寵物", "name": "宜蘭員山店", "address": "宜蘭縣員山鄉員山路一段1號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "03-922-0198", "city": "宜蘭縣", "id": 37, "district": "員山鄉"}, {"category": "東森寵物", "name": "蘇澳中山店", "address": "宜蘭縣蘇澳鎮中山路一段313號", "grade": "A", "listed": "否", "salesRep": "文峰", "phone": "03-996-0086", "city": "宜蘭縣", "id": 38, "district": "蘇澳鎮"}, {"category": "東森寵物", "name": "羅東林場店", "address": "宜蘭縣羅東鎮興東路244之1號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-956-0272", "city": "宜蘭縣", "id": 39, "district": "羅東鎮"}, {"category": "東森寵物", "name": "新營民生店", "address": "台南市新營區民生路167號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-656-2220", "city": "台南市", "id": 40, "district": "新營區"}, {"category": "東森寵物", "name": "麻豆興中店", "address": "台南市麻豆區興中路164號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-572-1883", "city": "台南市", "id": 41, "district": "麻豆區"}, {"category": "東森寵物", "name": "善化光復店", "address": "台南市善化區光復路66號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "06-581-5852", "city": "台南市", "id": 42, "district": "善化區"}, {"category": "東森寵物", "name": "佳里新生店", "address": "台南市佳里區新生路357號V", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-721-7202", "city": "台南市", "id": 43, "district": "佳里區"}, {"category": "東森寵物", "name": "安南海佃店", "address": "台南市安南區海佃路二段58.60.62.66號1樓", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-245-5666", "city": "台南市", "id": 44, "district": "安南區"}, {"category": "東森寵物", "name": "台南永康店", "address": "台南市永康區中華路651及653、657號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-302-3456", "city": "台南市", "id": 45, "district": "永康區"}, {"category": "東森寵物", "name": "新市中正店", "address": "台南市新市區中正路365號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-599-0880", "city": "台南市", "id": 46, "district": "新市區"}, {"category": "東森寵物", "name": "永康永大店", "address": "台南市永康區永大路二段25號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-205-3681", "city": "台南市", "id": 47, "district": "永康區"}, {"category": "東森寵物", "name": "台南中華東店", "address": "台南市東區中華東路三段193號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-290-9996", "city": "台南市", "id": 48, "district": "東區"}, {"category": "東森寵物", "name": "台南西門店", "address": "台南市北區西門路四段268號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "06-281-3222", "city": "台南市", "id": 49, "district": "北區"}, {"category": "東森寵物", "name": "仁德中山店", "address": "台南市仁德區中山路491號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "06-270-8339", "city": "台南市", "id": 50, "district": "仁德區"}, {"category": "東森寵物", "name": "安平建平店", "address": "台南市安平區建平路271號1樓", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "06-293-5252", "city": "台南市", "id": 51, "district": "安平區"}, {"category": "東森寵物", "name": "台南新興店", "address": "台南市南區新興路509-2號、509-3號1樓", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "06-261-1161", "city": "台南市", "id": 52, "district": "南區"}, {"category": "東森寵物", "name": "歸仁中山店", "address": "台南市歸仁區中山路三段97、99號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-239-0133", "city": "台南市", "id": 53, "district": "歸仁區"}, {"category": "東森寵物", "name": "關廟南雄店", "address": "台南市關廟區南雄路二段462號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-595-0565", "city": "台南市", "id": 54, "district": "關廟區"}, {"category": "東森寵物", "name": "豐原圓環東店", "address": "臺中市豐原區圓環東路257號1樓", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "04-25273339", "city": "台中市", "id": 55, "district": "豐原區"}, {"category": "東森寵物", "name": "北屯后庄北店", "address": "臺中市北屯區后庄北路11號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-24267066", "city": "台中市", "id": 56, "district": "北屯區"}, {"category": "東森寵物", "name": "台中中清店", "address": "臺中市北區中清路一段627、635號1樓", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "04-2299-1000", "city": "台中市", "id": 57, "district": "北區"}, {"category": "東森寵物", "name": "台中北屯店", "address": "臺中市北屯區北屯路218號.、220號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-2233-8017", "city": "台中市", "id": 58, "district": "北屯區"}, {"category": "東森寵物", "name": "台中東海店", "address": "臺中市龍井區遊園南路102﹑106號1樓", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "04-2652-1111", "city": "台中市", "id": 59, "district": "龍井區"}, {"category": "東森寵物", "name": "台中沙鹿店", "address": "臺中市沙鹿區臺灣大道7段279、281號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-2633-0281", "city": "台中市", "id": 60, "district": "沙鹿區"}, {"category": "東森寵物", "name": "台中澄清店", "address": "台中市西屯區西屯路三段92-1號.92-2號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "04-2461-8811", "city": "台中市", "id": 61, "district": "西屯區"}, {"category": "東森寵物", "name": "北屯軍功店", "address": "臺中市北屯區軍功路一段603號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "0915-365-933", "city": "台中市", "id": 62, "district": "北屯區"}, {"category": "東森寵物", "name": "台中青海店", "address": "臺中市西屯區青海路二段225號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "04-2452-8957", "city": "台中市", "id": 63, "district": "西屯區"}, {"category": "東森寵物", "name": "大里國光店", "address": "臺中市大里區國光路二段441號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-2407-9003", "city": "台中市", "id": 64, "district": "大里區"}, {"category": "東森寵物", "name": "大里仁化店", "address": "臺中市大里區仁化路585號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-2496-6218", "city": "台中市", "id": 65, "district": "大里區"}, {"category": "東森寵物", "name": "草屯明賢店", "address": "南投縣草屯鎮明賢街109號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-9233-6001", "city": "南投縣", "id": 66, "district": "草屯鎮"}, {"category": "東森寵物", "name": "埔里中山店", "address": "南投縣埔里鎮中山路3段372號1樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-9291-0060", "city": "南投縣", "id": 67, "district": "埔里鎮"}, {"category": "東森寵物", "name": "彰化中正店", "address": "彰化縣彰化市中正路二段749號、751號、753號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "047-512-555", "city": "彰化縣", "id": 68, "district": "彰化市"}, {"category": "東森寵物", "name": "和美彰美店", "address": "彰化縣和美鎮和東里彰美路5段247號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "047-565-555", "city": "彰化縣", "id": 69, "district": "和美鎮"}, {"category": "東森寵物", "name": "彰化中山店", "address": "彰化縣彰化市永福里中山路2段515號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "047-278-222", "city": "彰化縣", "id": 70, "district": "彰化市"}, {"category": "東森寵物", "name": "員林三民東店", "address": "彰化縣員林市中正里三民東街76號1.2樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "048-342-888", "city": "彰化縣", "id": 71, "district": "員林市"}, {"category": "東森寵物", "name": "田中福安店", "address": "彰化縣田中鎮中路里福安路28號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-8750-112", "city": "彰化縣", "id": 72, "district": "田中鎮"}, {"category": "東森寵物", "name": "溪湖彰水店", "address": "彰化縣溪湖鎮彰水路三段319、321號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-8810-080", "city": "彰化縣", "id": 73, "district": "溪湖鎮"}, {"category": "東森寵物", "name": "北斗中華店", "address": "彰化縣北斗鎮中華路388號1、2樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-8873-161", "city": "彰化縣", "id": 74, "district": "北斗鎮"}, {"category": "東森寵物", "name": "虎尾林森店", "address": "雲林縣虎尾鎮立仁里林森路二段232號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "056-332-666", "city": "雲林縣", "id": 75, "district": "虎尾鎮"}, {"category": "東森寵物", "name": "斗六民生南店", "address": "雲林縣斗六市民生南路67號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "055-321-222", "city": "雲林縣", "id": 76, "district": "斗六市"}, {"category": "東森寵物", "name": "北港民享店", "address": "雲林縣北港鎮民享路15號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "05-783-6501", "city": "雲林縣", "id": 77, "district": "北港鎮"}, {"category": "東森寵物", "name": "西螺公正店", "address": "雲林縣西螺鎮公正路143號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "05-5881-506", "city": "雲林縣", "id": 78, "district": "西螺鎮"}, {"category": "東森寵物", "name": "斗南延平店", "address": "雲林縣斗南鎮延平路二段178號1樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "05-5952-319", "city": "雲林縣", "id": 79, "district": "斗南鎮"}, {"category": "東森寵物", "name": "麥寮中興店", "address": "雲林縣麥寮鄉中興路43號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "05-6936-133", "city": "雲林縣", "id": 80, "district": "麥寮鄉"}, {"category": "東森寵物", "name": "嘉義北港店", "address": "嘉義市北港路313號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "052-330-006", "city": "嘉義市", "id": 81, "district": ""}, {"category": "東森寵物", "name": "嘉義友愛店", "address": "嘉義市西區福全里友愛路187號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "052-810-999", "city": "嘉義市", "id": 82, "district": "西區"}, {"category": "東森寵物", "name": "嘉義吳鳳南店", "address": "嘉義市東區吳鳳南路360號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "052-306-999", "city": "嘉義市", "id": 83, "district": "東區"}, {"category": "東森寵物", "name": "嘉義朴子店", "address": "嘉義縣朴子市大同路291號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "(05)370-1483", "city": "嘉義縣", "id": 84, "district": "朴子市"}, {"category": "東森寵物", "name": "岡山柳橋西店", "address": "高雄市岡山區柳橋西路6號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "07-625-9336", "city": "高雄市", "id": 85, "district": "岡山區"}, {"category": "東森寵物", "name": "左營左大店", "address": "高雄市左營區左營大路161、163號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "07-581-8668", "city": "高雄市", "id": 86, "district": "左營區"}, {"category": "東森寵物", "name": "楠梓藍昌店", "address": "高雄市楠梓區藍昌路425號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "07-591-8777", "city": "高雄市", "id": 87, "district": "楠梓區"}, {"category": "東森寵物", "name": "楠梓興楠店", "address": "高雄市楠梓區興楠路60號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "07-354-2228", "city": "高雄市", "id": 88, "district": "楠梓區"}, {"category": "東森寵物", "name": "路竹中山店", "address": "高雄市路竹區中山路1205.1207.1209號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-696-2681", "city": "高雄市", "id": 89, "district": "路竹區"}, {"category": "東森寵物", "name": "仁武仁雄店", "address": "高雄市仁武區仁雄路33號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-371-5333", "city": "高雄市", "id": 90, "district": "仁武區"}, {"category": "東森寵物", "name": "三民十全店", "address": "高雄市三民區十全二路114、116號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-311-5158", "city": "高雄市", "id": 91, "district": "三民區"}, {"category": "東森寵物", "name": "前金自強一店", "address": "高雄市前金區自強一路138號及140號1樓", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "07-211-1001", "city": "高雄市", "id": 92, "district": "前金區"}, {"category": "東森寵物", "name": "小港宏平店", "address": "高雄市小港區宏平路432號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "07-803-3315", "city": "高雄市", "id": 93, "district": "小港區"}, {"category": "東森寵物", "name": "前鎮瑞隆店", "address": "高雄市前鎮區瑞隆路401號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-715-8666", "city": "高雄市", "id": 94, "district": "前鎮區"}, {"category": "東森寵物", "name": "前金自立店", "address": "高雄市前金區自立二路91、93號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "07-285-3335", "city": "高雄市", "id": 95, "district": "前金區"}, {"category": "東森寵物", "name": "大寮鳳林店", "address": "高雄市大寮區鳳林三路135.137.139.141號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-782-7776", "city": "高雄市", "id": 96, "district": "大寮區"}, {"category": "東森寵物", "name": "鳳山青年店", "address": "高雄市鳳山區青年路二段62之5號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-710-5751", "city": "高雄市", "id": 97, "district": "鳳山區"}, {"category": "東森寵物", "name": "高雄林園東店", "address": "高雄市林園區東林東路28號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-642-5770", "city": "高雄市", "id": 98, "district": "林園區"}, {"category": "東森寵物", "name": "小港桂陽店", "address": "高雄市小港區桂陽路115號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-791-3955", "city": "高雄市", "id": 99, "district": "小港區"}, {"category": "東森寵物", "name": "澎湖馬公店", "address": "澎湖縣馬公市林森路36號1樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "06-927-0857", "city": "澎湖縣", "id": 100, "district": "馬公市"}, {"category": "東森寵物", "name": "苓雅大順店", "address": "高雄市苓雅區大順三路218號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-711-1118", "city": "高雄市", "id": 101, "district": "苓雅區"}, {"category": "東森寵物", "name": "三民建工店", "address": "高雄市三民區建工路351號1、2樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-380-0097", "city": "高雄市", "id": 102, "district": "三民區"}, {"category": "東森寵物", "name": "屏東自由店", "address": "屏東縣屏東市自由路474號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "08-735-1777", "city": "屏東縣", "id": 103, "district": "屏東市"}, {"category": "東森寵物", "name": "東港中正店", "address": "屏東縣東港鎮中正路1段173、175號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "08-835-6661", "city": "屏東縣", "id": 104, "district": "東港鎮"}, {"category": "東森寵物", "name": "潮州延平店", "address": "屏東縣潮州鎮延平路211、213、215號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "08-788-6000", "city": "屏東縣", "id": 105, "district": "潮州鎮"}, {"category": "東森寵物", "name": "內埔學人店", "address": "屏東縣內埔鄉學人路723.725號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "08-779-2225", "city": "屏東縣", "id": 106, "district": "內埔鄉"}, {"category": "東森寵物", "name": "恆春環城南店", "address": "屏東縣恆春鎮恆南路一巷58號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "08-889-1300", "city": "屏東縣", "id": 107, "district": "恆春鎮"}, {"category": "東森寵物", "name": "屏東萬丹店", "address": "屏東縣萬丹鄉萬丹路一段186、188號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "08-777-0998", "city": "屏東縣", "id": 108, "district": "萬丹鄉"}, {"category": "東森寵物", "name": "台東更生店", "address": "台東市中心里更生路507號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "089-330-030", "city": "台東縣", "id": 109, "district": ""}, {"category": "魚中魚", "name": "魚-土城店", "address": "新北市土城區金城路二段246號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-22606633", "city": "新北市", "id": 110, "district": "土城區"}, {"category": "魚中魚", "name": "魚-中和店", "address": "新北市中和區中正路209號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-22432288", "city": "新北市", "id": 111, "district": "中和區"}, {"category": "魚中魚", "name": "魚-中山店", "address": "新北市板橋區中山路一段248號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-29593939", "city": "新北市", "id": 112, "district": "板橋區"}, {"category": "魚中魚", "name": "魚-文化店", "address": "新北市板橋區文化路二段28號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-22533366", "city": "新北市", "id": 113, "district": "板橋區"}, {"category": "魚中魚", "name": "魚-新店店", "address": "新北市新店區中正路450號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-86676677", "city": "新北市", "id": 114, "district": "新店區"}, {"category": "魚中魚", "name": "狗-樹林店", "address": "新北市樹林區中正路103號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-86751666", "city": "新北市", "id": 115, "district": "樹林區"}, {"category": "魚中魚", "name": "魚-汐止店", "address": "新北市汐止區南興路28號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-26432299", "city": "新北市", "id": 116, "district": "汐止區"}, {"category": "魚中魚", "name": "魚-永和店", "address": "新北市永和區保生路55-2號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-29215899", "city": "新北市", "id": 117, "district": "永和區"}, {"category": "魚中魚", "name": "魚-大同店", "address": "新北市汐止區大同路370號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-26907999", "city": "新北市", "id": 118, "district": "汐止區"}, {"category": "魚中魚", "name": "魚-長江店", "address": "新北市板橋區長江路三段149號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-22528777", "city": "新北市", "id": 119, "district": "板橋區"}, {"category": "魚中魚", "name": "運-三重店", "address": "新北市三重區中正北路510號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "02-29821666", "city": "新北市", "id": 120, "district": "三重區"}, {"category": "魚中魚", "name": "狗-芝山店", "address": "台北市士林區福國路11號1樓.13號1樓", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-28312288", "city": "台北市", "id": 121, "district": "士林區"}, {"category": "魚中魚", "name": "魚-八德店", "address": "桃園市八德區中華路263-2號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-3787799", "city": "桃園市", "id": 122, "district": "八德區"}, {"category": "魚中魚", "name": "魚-桃興店", "address": "桃園市大興西路一段221號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-3171199", "city": "桃園市", "id": 123, "district": ""}, {"category": "魚中魚", "name": "狗-大湳店", "address": "桃園市八德區大正里介壽路一段466號", "grade": "B", "listed": "否", "salesRep": "文峰", "phone": "03-363-8888", "city": "桃園市", "id": 124, "district": "八德區"}, {"category": "魚中魚", "name": "魚-忠孝店", "address": "新竹市東區東光路177號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-5617899", "city": "新竹市", "id": 125, "district": "東區"}, {"category": "魚中魚", "name": "魚-民權店", "address": "新竹市北區經國路一段776號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-5322888", "city": "新竹市", "id": 126, "district": "北區"}, {"category": "魚中魚", "name": "魚-經國店", "address": "新竹市香山區經國路三段8號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-5398666", "city": "新竹市", "id": 127, "district": "香山區"}, {"category": "魚中魚", "name": "運-六家店", "address": "新竹縣竹北市自強南路135號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-6582988", "city": "新竹縣", "id": 128, "district": "竹北市"}, {"category": "魚中魚", "name": "魚-竹北店", "address": "新竹縣竹北市博愛街119號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-5512288", "city": "新竹縣", "id": 129, "district": "竹北市"}, {"category": "魚中魚", "name": "魚-草屯店", "address": "南投縣草屯鎮中正路874號1樓", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "049-2302656", "city": "南投縣", "id": 130, "district": "草屯鎮"}, {"category": "魚中魚", "name": "魚-南屯店", "address": "台中市南屯區五權西路二段78、80號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-24732266", "city": "台中市", "id": 131, "district": "南屯區"}, {"category": "魚中魚", "name": "魚-北屯店", "address": "台中市北屯區文心路四段319號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "04-22478866", "city": "台中市", "id": 132, "district": "北屯區"}, {"category": "魚中魚", "name": "魚-大里店", "address": "台中市大里區國光路二段505號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-24073388", "city": "台中市", "id": 133, "district": "大里區"}, {"category": "魚中魚", "name": "魚-文心店", "address": "台中市南屯區文心路一段372號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-23292999", "city": "台中市", "id": 134, "district": "南屯區"}, {"category": "魚中魚", "name": "魚-金馬店", "address": "彰化市金馬路二段371-2號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "04-7358877", "city": "彰化縣", "id": 135, "district": ""}, {"category": "魚中魚", "name": "狗-文心店", "address": "台中市南屯區文心路一段385號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-22596659", "city": "台中市", "id": 136, "district": "南屯區"}, {"category": "魚中魚", "name": "魚-文昌店", "address": "台中市北屯區文心路四段806號", "grade": "C", "listed": "否", "salesRep": "Titan", "phone": "04-22368818", "city": "台中市", "id": 137, "district": "北屯區"}, {"category": "魚中魚", "name": "魚-豐原店", "address": "台中市豐原區豐原大道六段835號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-25158666", "city": "台中市", "id": 138, "district": "豐原區"}, {"category": "魚中魚", "name": "運-十甲店", "address": "台中市東區十甲東路616號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-22118807", "city": "台中市", "id": 139, "district": "東區"}, {"category": "魚中魚", "name": "運-豐原店", "address": "台中市豐原區圓環東路528號1樓", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-25229666", "city": "台中市", "id": 140, "district": "豐原區"}, {"category": "魚中魚", "name": "運-上石店", "address": "台中市西屯區上石路190-2號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-27069666", "city": "台中市", "id": 141, "district": "西屯區"}, {"category": "魚中魚", "name": "運-雅潭店", "address": "台中市潭子區崇德路四段467-1號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-25315599", "city": "台中市", "id": 142, "district": "潭子區"}, {"category": "魚中魚", "name": "狗-嶺東店", "address": "台中市南屯區永春南路1-20號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-23862266", "city": "台中市", "id": 143, "district": "南屯區"}, {"category": "魚中魚", "name": "運-六順店", "address": "台中市東區環中東路五段130號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-24811888", "city": "台中市", "id": 144, "district": "東區"}, {"category": "魚中魚", "name": "運-建成店", "address": "台中市東區建成路669號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "04-22852666", "city": "台中市", "id": 145, "district": "東區"}, {"category": "魚中魚", "name": "狗-潭通店", "address": "台中市潭子區潭陽里圓通南路176號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-25381888", "city": "台中市", "id": 146, "district": "潭子區"}, {"category": "魚中魚", "name": "魚-嘉義店", "address": "嘉義市東區豐年里興業東路77號", "grade": "A", "listed": "否", "salesRep": "Titan", "phone": "05-2227888", "city": "嘉義市", "id": 147, "district": "東區"}, {"category": "魚中魚", "name": "運-嘉義店", "address": "嘉義市西區林森西路167號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "05-2271659", "city": "嘉義市", "id": 148, "district": "西區"}, {"category": "魚中魚", "name": "運-嘉興店", "address": "嘉義市西區福全里中興路103號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "05-2332266", "city": "嘉義市", "id": 149, "district": "西區"}, {"category": "魚中魚", "name": "狗-嘉民店", "address": "嘉義市西區興業西路269號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "05-2359966", "city": "嘉義市", "id": 150, "district": "西區"}, {"category": "魚中魚", "name": "魚-永康店", "address": "台南市永康區中華路707號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-3025599", "city": "台南市", "id": 151, "district": "永康區"}, {"category": "魚中魚", "name": "魚-安平店", "address": "台南市安平區中華西路二段55號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-2977999", "city": "台南市", "id": 152, "district": "安平區"}, {"category": "魚中魚", "name": "運-崇明店", "address": "臺南市東區崇成里崇明路511號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-2672728", "city": "台南市", "id": 153, "district": "東區"}, {"category": "魚中魚", "name": "運-永大店", "address": "台南市永康區永大路二段245號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-2722866", "city": "台南市", "id": 154, "district": "永康區"}, {"category": "魚中魚", "name": "魚-華夏店", "address": "高雄市左營區華夏路1340號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-3412266", "city": "高雄市", "id": 155, "district": "左營區"}, {"category": "魚中魚", "name": "魚-民族店", "address": "高雄市三民區民族一路610、612號", "grade": "B", "listed": "否", "salesRep": "Titan", "phone": "07-3597676", "city": "高雄市", "id": 156, "district": "三民區"}, {"category": "魚中魚", "name": "魚-巨蛋店", "address": "高雄市左營區博愛三路170號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-3593355", "city": "高雄市", "id": 157, "district": "左營區"}, {"category": "魚中魚", "name": "魚-楠梓店", "address": "高雄市楠梓區興楠路256號、258號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-3553399", "city": "高雄市", "id": 158, "district": "楠梓區"}, {"category": "魚中魚", "name": "魚-東山店", "address": "", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "其他", "id": 159, "district": ""}, {"category": "寵物公園", "name": "文化店寵物公園", "address": "新北市板橋區文化路2段501號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-8251-0201", "city": "新北市", "id": 160, "district": "板橋區"}, {"category": "寵物公園", "name": "福德店寵物公園", "address": "新北市三重區福德北路74號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2978-4705", "city": "新北市", "id": 161, "district": "三重區"}, {"category": "寵物公園", "name": "通化店寵物公園", "address": "台北市大安區基隆路二段108號1F", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2735-1888", "city": "台北市", "id": 162, "district": "大安區"}, {"category": "寵物公園", "name": "林森店寵物公園", "address": "台北市中山區林森北路512、516號1F", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2567-6551", "city": "台北市", "id": 163, "district": "中山區"}, {"category": "寵物公園", "name": "文林店寵物公園", "address": "台北市士林區文林路62號1F", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2883-1662", "city": "台北市", "id": 164, "district": "士林區"}, {"category": "寵物公園", "name": "汐止店寵物公園", "address": "新北市汐止區新興路26號1F", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2647-7355", "city": "新北市", "id": 165, "district": "汐止區"}, {"category": "寵物公園", "name": "中原店寵物公園", "address": "桃園市中壢區中山東路二段1號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-436-3885", "city": "桃園市", "id": 166, "district": "中壢區"}, {"category": "寵物公園", "name": "興南店寵物公園", "address": "新北市中和區興南路一段45號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2947-6707", "city": "新北市", "id": 167, "district": "中和區"}, {"category": "寵物公園", "name": "永康店寵物公園", "address": "台南市永康區中華路430號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "06-302-3005", "city": "台南市", "id": 168, "district": "永康區"}, {"category": "寵物公園", "name": "大興店寵物公園", "address": "桃園市桃園區大興西路二段120號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-215-1745", "city": "桃園市", "id": 169, "district": "桃園區"}, {"category": "寵物公園", "name": "雙和店寵物公園", "address": "新北市永和區中正路181、183、185號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2943-0349", "city": "新北市", "id": 170, "district": "永和區"}, {"category": "寵物公園", "name": "天母店寵物公園", "address": "台北市士林區天母西路12-2號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2876-7477", "city": "台北市", "id": 171, "district": "士林區"}, {"category": "寵物公園", "name": "頂溪店寵物公園", "address": "新北市永和區中山路一段24號", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2231-4376", "city": "新北市", "id": 172, "district": "永和區"}, {"category": "寵物公園", "name": "石牌店寵物公園", "address": "台北市北投區石牌路一段53號", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2822-7550", "city": "台北市", "id": 173, "district": "北投區"}, {"category": "寵物公園", "name": "汐福店寵物公園", "address": "新北市汐止區福德一路123之1號", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2692-2305", "city": "新北市", "id": 174, "district": "汐止區"}, {"category": "寵物公園", "name": "新海店寵物公園", "address": "新北市板橋區英士路74號1樓&B1", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2250-2233", "city": "新北市", "id": 175, "district": "板橋區"}, {"category": "寵物公園", "name": "承四店寵物公園", "address": "台北市士林區承德路四段24號", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2885-0111", "city": "台北市", "id": 176, "district": "士林區"}, {"category": "寵物公園", "name": "汐康店寵物公園", "address": "新北市汐止區康寧街519號", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2692-3355", "city": "新北市", "id": 177, "district": "汐止區"}, {"category": "寵物公園", "name": "文德店寵物公園", "address": "台北市內湖區文德路108號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-8751-3700", "city": "台北市", "id": 178, "district": "內湖區"}, {"category": "寵物公園", "name": "內二店寵物公園", "address": "台北市內湖區內湖路二段 397 號", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2790-8700", "city": "台北市", "id": 179, "district": "內湖區"}, {"category": "寵物公園", "name": "吉林店寵物公園", "address": "台北市中山區吉林路111號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2521-7500", "city": "台北市", "id": 180, "district": "中山區"}, {"category": "寵物公園", "name": "健康店寵物公園", "address": "台北市松山區健康路241號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2748-8500", "city": "台北市", "id": 181, "district": "松山區"}, {"category": "寵物公園", "name": "新陽店寵物公園", "address": "新北市三重區重陽路三段152號", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2971-0777", "city": "新北市", "id": 182, "district": "三重區"}, {"category": "寵物公園", "name": "木新店寵物公園", "address": "台北市文山區木新路三段272號", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2937-2900", "city": "台北市", "id": 183, "district": "文山區"}, {"category": "寵物公園", "name": "國光店寵物公園", "address": "新北市板橋區國光路61號1樓", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2967-7200", "city": "新北市", "id": 184, "district": "板橋區"}, {"category": "寵物公園", "name": "板慶店寵物公園", "address": "新北市板橋區重慶路110號1樓、地下1樓", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2964-6161", "city": "新北市", "id": 185, "district": "板橋區"}, {"category": "寵物公園", "name": "央北店寵物公園", "address": "台北市北投區中央北路一段131號1樓", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2891-3025", "city": "台北市", "id": 186, "district": "北投區"}, {"category": "寵物公園", "name": "新中店寵物公園", "address": "新北市新店區中正路255號1樓", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2911-6500", "city": "新北市", "id": 187, "district": "新店區"}, {"category": "寵物公園", "name": "新城店寵物公園", "address": "新北市土城區金城路三段162號1樓&B1", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-8262-9999", "city": "新北市", "id": 188, "district": "土城區"}, {"category": "寵物公園", "name": "景美店寵物公園", "address": "台北市文山區羅斯福路六段302號1樓", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2931-7200", "city": "台北市", "id": 189, "district": "文山區"}, {"category": "寵物公園", "name": "新維店寵物公園", "address": "新北市新莊區富國路112號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2201-7777", "city": "新北市", "id": 190, "district": "新莊區"}, {"category": "寵物公園", "name": "新雅店寵物公園", "address": "新北市板橋區南雅南路一段40號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2968-8882", "city": "新北市", "id": 191, "district": "板橋區"}, {"category": "寵物公園", "name": "鼎山店寵物公園", "address": "高雄市三民區灣成里鼎山街255號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-380-1966", "city": "高雄市", "id": 192, "district": "三民區"}, {"category": "寵物公園", "name": "一心店寵物公園", "address": "台中市南屯區公益路二段169號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-2325-0800", "city": "台中市", "id": 193, "district": "南屯區"}, {"category": "寵物公園", "name": "三多店寵物公園", "address": "高雄市苓雅區三多一路335號1F", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-727-0577", "city": "高雄市", "id": 194, "district": "苓雅區"}, {"category": "寵物公園", "name": "東門店寵物公園", "address": "台南市東區東門路二段365巷26號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "06-235-0711", "city": "台南市", "id": 195, "district": "東區"}, {"category": "寵物公園", "name": "西門店寵物公園", "address": "台南市北區西門路四段121號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "06-251-1600", "city": "台南市", "id": 196, "district": "北區"}, {"category": "寵物公園", "name": "新頭店寵物公園", "address": "苗栗縣頭份市中華路1311、1313號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "037-687-677", "city": "苗栗縣", "id": 197, "district": "頭份市"}, {"category": "寵物公園", "name": "青年店寵物公園", "address": "高雄市鳳山區青年路二段450、452號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-780-2700", "city": "高雄市", "id": 198, "district": "鳳山區"}, {"category": "寵物公園", "name": "五甲店寵物公園", "address": "高雄市鳳山區五甲二路572號(1~3F)及574號(1~3F)", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "07-822-8188", "city": "高雄市", "id": 199, "district": "鳳山區"}, {"category": "寵物公園", "name": "蘆洲店寵物公園", "address": "新北市蘆洲區長榮路71號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2283-3600", "city": "新北市", "id": 200, "district": "蘆洲區"}, {"category": "寵物公園", "name": "竹雅店寵物公園", "address": "新竹縣竹北市三民路218號及220號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-551-7011", "city": "新竹縣", "id": 201, "district": "竹北市"}, {"category": "寵物公園", "name": "漢口店寵物公園", "address": "台中市北區漢口路四段297號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-2231-1800", "city": "台中市", "id": 202, "district": "北區"}, {"category": "寵物公園", "name": "新月店寵物公園", "address": "宜蘭縣宜蘭市神農路二段125號、127號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-931-2601", "city": "宜蘭縣", "id": 203, "district": "宜蘭市"}, {"category": "寵物公園", "name": "淡北店寵物公園", "address": "新北市淡水區中山北路一段65號、67號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2625-3455", "city": "新北市", "id": 204, "district": "淡水區"}, {"category": "寵物公園", "name": "南崁店寵物公園", "address": "桃園市蘆竹區中正路354號、356號及358號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-212-1110", "city": "桃園市", "id": 205, "district": "蘆竹區"}, {"category": "寵物公園", "name": "永貞店寵物公園", "address": "新北市永和區和平里永貞路420號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2232-5188", "city": "新北市", "id": 206, "district": "永和區"}, {"category": "寵物公園", "name": "八德店寵物公園", "address": "桃園市八德區介壽路一段968、970、972 號 1F+2F", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-218-3255", "city": "桃園市", "id": 207, "district": "八德區"}, {"category": "寵物公園", "name": "逢甲店寵物公園", "address": "台中市西屯區福星路552、554、556號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-2706-6610", "city": "台中市", "id": 208, "district": "西屯區"}, {"category": "寵物公園", "name": "瑞豐店寵物公園", "address": "高雄市鼓山區裕誠路1085號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-550-1058", "city": "高雄市", "id": 209, "district": "鼓山區"}, {"category": "寵物公園", "name": "安平店寵物公園", "address": "台南市安平區華平路263號、265號1樓", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "06-2992-986", "city": "台南市", "id": 210, "district": "安平區"}, {"category": "寵物公園", "name": "蘆洲集賢店寵物公園", "address": "新北市蘆洲區集賢路222-2號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2282-8079", "city": "新北市", "id": 211, "district": "蘆洲區"}, {"category": "寵物公園", "name": "斗六民生店寵物公園", "address": "雲林縣斗六市民生南路117號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "05-537-0569", "city": "雲林縣", "id": 212, "district": "斗六市"}, {"category": "寵物公園", "name": "彰化民族店寵物公園", "address": "彰化縣彰化市民族路291號1+2樓", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-728-3330", "city": "彰化縣", "id": 213, "district": "彰化市"}, {"category": "寵物公園", "name": "台北忠五店寵物公園", "address": "台北市信義區忠孝東路五段201號及203號1樓", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2756-0667", "city": "台北市", "id": 214, "district": "信義區"}, {"category": "寵物公園", "name": "桃園青埔店寵物公園", "address": "桃園市中壢區高鐵南路二段352號1樓", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-287-0280", "city": "桃園市", "id": 215, "district": "中壢區"}, {"category": "寵物公園", "name": "新莊佳瑪店寵物公園", "address": "新北市新莊區幸福路716號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2991-0286", "city": "新北市", "id": 216, "district": "新莊區"}, {"category": "寵物公園", "name": "新莊復興店寵物公園", "address": "新北市新莊區復興路一段39及41號", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2991-2117", "city": "新北市", "id": 217, "district": "新莊區"}, {"category": "寵物公園", "name": "苗栗光復店寵物公園", "address": "苗栗縣苗栗市光復路9號1樓及2樓", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "037-360-855", "city": "苗栗縣", "id": 218, "district": "苗栗市"}, {"category": "寵物公園", "name": "小港漢民店寵物公園", "address": "高雄市小港區漢民路299號1樓及2樓", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "07-801-2112", "city": "高雄市", "id": 219, "district": "小港區"}, {"category": "寵物公園", "name": "屏東自由店寵物公園", "address": "屏東縣屏東市自由路621號1樓", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "08-732-1211", "city": "屏東縣", "id": 220, "district": "屏東市"}, {"category": "寵物公園", "name": "淡水中正店寵物公園", "address": "新北市淡水區中正東路77號1樓及2樓", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-8631-4022", "city": "新北市", "id": 221, "district": "淡水區"}, {"category": "寵物公園", "name": "仁武仁忠店寵物公園", "address": "高雄市仁武區仁忠路149號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "07-371-2257", "city": "高雄市", "id": 222, "district": "仁武區"}, {"category": "寵物公園", "name": "內壢文化店寵物公園", "address": "桃園市中壢區文化二路95號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-463-0221", "city": "桃園市", "id": 223, "district": "中壢區"}, {"category": "寵物公園", "name": "林口中山店寵物公園", "address": "新北市林口區中山路248號之1", "grade": "D", "listed": "是", "salesRep": "文峰", "phone": "02-2603-1978", "city": "新北市", "id": 224, "district": "林口區"}, {"category": "寵物公園", "name": "前鎮瑞隆店寵物公園", "address": "高雄市前鎮區瑞隆路480號1及2樓", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-715-0508", "city": "高雄市", "id": 225, "district": "前鎮區"}, {"category": "寵物公園", "name": "五甲二店寵物公園", "address": "高雄市鳳山區五甲一路298號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-710-8788", "city": "高雄市", "id": 226, "district": "鳳山區"}, {"category": "寵物公園", "name": "苗栗竹南店寵物公園", "address": "苗栗縣竹南鎮環市路三段8號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-746-1115", "city": "苗栗縣", "id": 227, "district": "竹南鎮環市"}, {"category": "寵物公園", "name": "林口仁愛店寵物公園", "address": "新北市林口區仁愛路二段506號1樓 及 \n24448新北市林口區文化二路一段559-6號1樓", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-2602-5008", "city": "新北市", "id": 228, "district": "林口區"}, {"category": "寵物公園", "name": "台中北屯店寵物公園", "address": "台中市北屯區北屯路279-2. 279-3號1樓", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-2233-1255", "city": "台中市", "id": 229, "district": "北屯區"}, {"category": "寵物公園", "name": "汐止遠雄店寵物公園", "address": "新北市汐止區新台五路一段95號1樓", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2697-2750", "city": "新北市", "id": 230, "district": "汐止區"}, {"category": "寵物公園", "name": "大潤發內湖二店寵物公園", "address": "台北市內湖區舊宗路一段188號3樓", "grade": "D", "listed": "否", "salesRep": "文峰", "phone": "02-2793-0990", "city": "台北市", "id": 231, "district": "內湖區"}, {"category": "寵物公園", "name": "台南新營店寵物公園", "address": "台南市新營區三民路152之17號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-633-2223", "city": "台南市", "id": 232, "district": "新營區"}, {"category": "寵物公園", "name": "台南崑大店寵物公園", "address": "台南市永康區崑大路225、223、221號", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "06-205-1570", "city": "台南市", "id": 233, "district": "永康區"}, {"category": "寵物公園", "name": "台中大里店寵物公園", "address": "台中市大里區國光路二段409號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "04-2406-0350", "city": "台中市", "id": 234, "district": "大里區"}, {"category": "寵物公園", "name": "台北南港店寵物公園", "address": "台北市南港區研究院路一段 99 號B1-C區", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2651-2122", "city": "台北市", "id": 235, "district": "南港區"}, {"category": "寵物公園", "name": "台南歸仁店寵物公園", "address": "台南市歸仁區後市里15鄰中山路二段222號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "06-230-0280", "city": "台南市", "id": 236, "district": "歸仁區後市"}, {"category": "寵物公園", "name": "高雄楠梓店寵物公園", "address": "高雄市楠梓區德賢路138號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-360-0758", "city": "高雄市", "id": 237, "district": "楠梓區"}, {"category": "寵物公園", "name": "高雄新興店寵物公園", "address": "高雄市新興區復興一路19號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-201-0070", "city": "高雄市", "id": 238, "district": "新興區"}, {"category": "寵物公園", "name": "台北新生店寵物公園", "address": "台北市大安區新生南路一段147號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "02-2704-7700", "city": "台北市", "id": 239, "district": "大安區"}, {"category": "寵物公園", "name": "台北安和店寵物公園", "address": "台北市大安區安和路二段225號1樓及2樓", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2378-2000", "city": "台北市", "id": 240, "district": "大安區"}, {"category": "寵物公園", "name": "桃園龍潭店寵物公園", "address": "桃園市龍潭區中興路433號", "grade": "C", "listed": "否", "salesRep": "文峰", "phone": "03-489-8090", "city": "桃園市", "id": 241, "district": "龍潭區"}, {"category": "寵物公園", "name": "台北興隆店寵物公園", "address": "台北市文山區興隆路二段343.345號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-8663-2212", "city": "台北市", "id": 242, "district": "文山區"}, {"category": "寵物公園", "name": "台中西屯店寵物公園", "address": "台中市西屯區大隆路140號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-2310-0230", "city": "台中市", "id": 243, "district": "西屯區"}, {"category": "寵物公園", "name": "內湖康樂店寵物公園", "address": "台北市內湖區康樂街116-3號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2631-0860", "city": "台北市", "id": 244, "district": "內湖區"}, {"category": "寵物公園", "name": "八德興豐店寵物公園", "address": "桃園市八德區興豐路485號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-368-2122", "city": "桃園市", "id": 245, "district": "八德區"}, {"category": "寵物公園", "name": "大里成功店寵物公園", "address": "台中市大里區成功路498號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "04-2491-0650", "city": "台中市", "id": 246, "district": "大里區"}, {"category": "寵物公園", "name": "北屯軍功店寵物公園", "address": "台中市北屯區軍功路二段167號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-2239-0900", "city": "台中市", "id": 247, "district": "北屯區"}, {"category": "寵物公園", "name": "高雄岡山店寵物公園", "address": "高雄市岡山區民有路44號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "07-621-0962", "city": "高雄市", "id": 248, "district": "岡山區"}, {"category": "寵物公園", "name": "桃園龍安店寵物公園", "address": "桃園市桃園區龍安街135號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "06-2051570", "city": "桃園市", "id": 249, "district": "桃園區"}, {"category": "寵物公園", "name": "台中清水店寵物公園", "address": "台中市清水區中華路465號", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "04-2626-5335", "city": "台中市", "id": 250, "district": "清水區"}, {"category": "寵物公園", "name": "基隆信義店寵物公園", "address": "基隆市信義區東明路177號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2466-0550", "city": "基隆市", "id": 251, "district": "信義區"}, {"category": "寵物公園", "name": "屏東潮州店寵物公園", "address": "屏東縣潮州鎮延平路37號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "08-788-0558", "city": "屏東縣", "id": 252, "district": "潮州鎮"}, {"category": "寵物公園", "name": "新北泰山店寵物公園", "address": "新北市泰山區明志路二段121號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2297-5070", "city": "新北市", "id": 253, "district": "泰山區"}, {"category": "寵物公園", "name": "信義中坡店寵物公園", "address": "台北市信義區中坡北路17號、19號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "02-2756-5211", "city": "台北市", "id": 254, "district": "信義區"}, {"category": "寵物公園", "name": "中山錦州店寵物公園", "address": "台北市中山區錦州街417號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2503-2626", "city": "台北市", "id": 255, "district": "中山區"}, {"category": "寵物公園", "name": "竹北福興店寵物公園", "address": "新竹縣竹北市福興東路一段276號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "03-667-3635", "city": "新竹縣", "id": 256, "district": "竹北市"}, {"category": "寵物公園", "name": "台中太平店寵物公園", "address": "台中市太平區樹孝路8之4號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "04-2391-5088", "city": "台中市", "id": 257, "district": "太平區"}, {"category": "寵物公園", "name": "台東中山店寵物公園", "address": "台東縣台東市中山路370號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "089-330-021", "city": "台東縣", "id": 258, "district": "台東市"}, {"category": "寵物公園", "name": "雲林斗南店寵物公園", "address": "雲林縣斗南鎮中山路30號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "05-597-0095", "city": "雲林縣", "id": 259, "district": "斗南鎮"}, {"category": "寵物公園", "name": "彰化員林店寵物公園", "address": " 彰化縣員林市育英路62號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-836-1266", "city": " 彰化縣", "id": 260, "district": "員林市"}, {"category": "寵物公園", "name": "南港二店寵物公園", "address": "台北市南港區南港路二段20巷5號B1", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2651-2131", "city": "台北市", "id": 261, "district": "南港區"}, {"category": "寵物公園", "name": "雲林虎尾店寵物公園", "address": "雲林縣虎尾鎮信義路45號1F", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "05-632-0663", "city": "雲林縣", "id": 262, "district": "虎尾鎮"}, {"category": "寵物公園", "name": "宜蘭羅東店寵物公園", "address": "宜蘭縣羅東鎮光榮路265號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "03-953-0097", "city": "宜蘭縣", "id": 263, "district": "羅東鎮"}, {"category": "寵物公園", "name": "台南新市店寵物公園", "address": "台南市新市區中正路39、41號", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "06-589-0332", "city": "台南市", "id": 264, "district": "新市區"}, {"category": "寵物公園", "name": "新竹竹東店寵物公園", "address": "新竹縣竹東鎮長春路三段315號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "03-596-3325", "city": "新竹縣", "id": 265, "district": "竹東鎮"}, {"category": "寵物公園", "name": "桃園平鎮店寵物公園", "address": "桃園市平鎮區民族路229號", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "03-495-0311", "city": "桃園市", "id": 266, "district": "平鎮區"}, {"category": "寵物公園", "name": "花蓮建國店寵物公園", "address": "花蓮縣花蓮市建國路168號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "03-835-0700", "city": "花蓮縣", "id": 267, "district": "花蓮市"}, {"category": "寵物公園", "name": "南投草屯店寵物公園", "address": "南投縣草屯鎮中正路590號", "grade": "D", "listed": "否", "salesRep": "Titan", "phone": "049-236-2155", "city": "南投縣", "id": 268, "district": "草屯鎮"}, {"category": "寵物公園", "name": "彰化中央店寵物公園", "address": "彰化縣彰化市中央路202號", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "04-763-1112", "city": "彰化縣", "id": 269, "district": "彰化市"}, {"category": "寵物公園", "name": "高雄美術店寵物公園", "address": "高雄市鼓山區明誠四路112號1F (A1-2)", "grade": "A", "listed": "是", "salesRep": "Titan", "phone": "07-586-6090", "city": "高雄市", "id": 270, "district": "鼓山區"}, {"category": "寵物公園", "name": "新店民權店寵物公園", "address": "新北市新店區民權路2號", "grade": "B", "listed": "是", "salesRep": "文峰", "phone": "02-2910-6679", "city": "新北市", "id": 271, "district": "新店區"}, {"category": "寵物公園", "name": "楠梓楠新店寵物公園", "address": "高雄市楠梓區楠梓新路233號", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "07-353-0856", "city": "高雄市", "id": 272, "district": "楠梓區"}, {"category": "寵物公園", "name": "桃園大有店寵物公園", "address": "桃園市桃園區大有路581號1樓", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "03-326-1113", "city": "桃園市", "id": 273, "district": "桃園區"}, {"category": "寵物公園", "name": "嘉義友愛店寵物公園", "address": "嘉義市西區友愛路246號、興雅路73號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "05-232-5521", "city": "嘉義市", "id": 274, "district": "西區"}, {"category": "寵物公園", "name": "新竹經國店寵物公園", "address": "新竹市東區經國路一段546號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "03-533-5633", "city": "新竹市", "id": 275, "district": "東區"}, {"category": "寵物公園", "name": "台南安南店寵物公園", "address": "台南市安南區北安路三段179號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "06-245-0255", "city": "台南市", "id": 276, "district": "安南區"}, {"category": "寵物公園", "name": "台南善化寵物公園", "address": "台南市善化區忠孝路1-1號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "065830571", "city": "台南市", "id": 277, "district": "善化區"}, {"category": "寵物公園", "name": "寵物公園OMO PC", "address": "桃園市大園區開和路128號1F(11-13號碼頭)", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-2700-0898 #3869", "city": "桃園市", "id": 278, "district": "大園區"}, {"category": "寵物公園", "name": "台中陝西店寵物公園", "address": "台中市北區陜西路46號", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "04-2291-0051", "city": "台中市", "id": 279, "district": "北區"}, {"category": "寵物公園", "name": "彰化鹿港寵物公園", "address": "彰化縣福興鄉橋頭村中正路226號1樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "04-7771779", "city": "彰化縣", "id": 280, "district": "福興鄉"}, {"category": "寵物公園", "name": "新竹建中寵物公園", "address": "新竹市東區建中路37號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "03-5730552", "city": "新竹市", "id": 281, "district": "東區"}, {"category": "寵物公園", "name": "屏東內埔寵物公園", "address": "屏東縣內埔鄉學人路719、721號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "08-7780083", "city": "屏東縣", "id": 282, "district": "內埔鄉"}, {"category": "寵物公園", "name": "2桃園龜山寵物公園", "address": "桃園市龜山區復興一路345號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "03-3970525", "city": "桃園市", "id": 283, "district": "龜山區"}, {"category": "寵物公園", "name": "高雄左營寵物公園", "address": "高雄市左營區自由四路138.140.142號1F", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "07-3507516", "city": "高雄市", "id": 284, "district": "左營區"}, {"category": "寵物公園", "name": "台南健康寵物公園", "address": "台南市南區健康路二段179號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "06-2650113", "city": "台南市", "id": 285, "district": "南區"}, {"category": "寵物公園", "name": "苓雅光華寵物公園", "address": "高雄市苓雅區光華一路98號1~2樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "07-7216066", "city": "高雄市", "id": 286, "district": "苓雅區"}, {"category": "寵物公園", "name": "三重仁愛寵物公園", "address": "新北市三重區仁愛街293號1.2樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-29889055", "city": "新北市", "id": 287, "district": "三重區"}, {"category": "寵物公園", "name": "寵物公園2松山延吉", "address": "台北市松山區延吉街37號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-25796690", "city": "台北市", "id": 288, "district": "松山區"}, {"category": "寵物公園", "name": "寵物公園-大智通倉", "address": "新北市樹林區佳園路二段70-1號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-26887070#2401", "city": "新北市", "id": 289, "district": "樹林區"}, {"category": "寵物公園", "name": "台中沙鹿店寵物公園", "address": "台中市沙鹿區中正街71、73號", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "04-26651112", "city": "台中市", "id": 290, "district": "沙鹿區"}, {"category": "寵物公園", "name": "草屯中興店寵物公園", "address": "南投縣草屯鎮中興路152號", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "049-2362080", "city": "南投縣", "id": 291, "district": "草屯鎮"}, {"category": "寵物公園", "name": "南投埔里店寵物公園", "address": "南投縣埔里鎮中正路438號1~3F", "grade": "C", "listed": "是", "salesRep": "Titan", "phone": "049-290-0168", "city": "南投縣", "id": 292, "district": "埔里鎮"}, {"category": "寵物公園", "name": "台南佳里店寵物公園", "address": "台南市佳里區新生路329號1~2F", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "id": 293, "district": "佳里區"}, {"category": "寵物公園", "name": "高雄前金店寵物公園", "address": "高雄市前金區中華三路232號1~2F", "grade": "B", "listed": "是", "salesRep": "Titan", "phone": "07-2852166", "city": "高雄市", "id": 294, "district": "前金區"}, {"category": "寵物公園", "name": "三峽北大店寵物公園", "address": "新北市樹林區大義路360號1~2F", "grade": "A", "listed": "是", "salesRep": "文峰", "phone": "02-26685650", "city": "新北市", "id": 295, "district": "樹林區"}, {"category": "寵物公園", "name": "毛孩Boxful倉寵物公園", "address": "桃園市蘆竹區南工路一段12號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "03-3530363", "city": "桃園市", "id": 296, "district": "蘆竹區"}, {"category": "寵物公園", "name": "龍潭北龍寵物公園", "address": "桃園市龍潭區北龍路39號", "grade": "C", "listed": "是", "salesRep": "文峰", "phone": "03-4898090", "city": "桃園市", "id": 297, "district": "龍潭區"}, {"category": "寵物公園", "name": "土城明德店寵物公園", "address": "新北市土城區明德路二段62號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "0935355660", "city": "新北市", "id": 298, "district": "土城區"}, {"category": "寵物公園", "name": "台中大雅店寵物公園", "address": "台中市大雅區中清路三段1103、1105號1~2F", "grade": "D", "listed": "是", "salesRep": "Titan", "phone": "04-25666321", "city": "台中市", "id": 299, "district": "大雅區"}, {"category": "寵物公園", "name": "新莊宏匯店寵物公園", "address": "新北市新莊區新北大道四段3號8樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "0972-259-329", "city": "新北市", "id": 300, "district": "新莊區"}, {"category": "寵物公園", "name": "板橋金門店寵物公園", "address": "新北市板橋區金門街357號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "02-26750112", "city": "新北市", "id": 301, "district": "板橋區"}, {"category": "寵物公園", "name": "永康民族店寵物公園", "address": "台南市永康區民族路218號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "06-2051570", "city": "台南市", "id": 302, "district": "永康區"}, {"category": "寵物公園", "name": "高雄夢時代店寵物公園", "address": "高雄市前鎮區中華五路789號", "grade": "", "listed": "否", "salesRep": "Titan", "phone": "07-8220788", "city": "高雄市", "id": 303, "district": "前鎮區"}, {"category": "寵物公園", "name": "台中豐原店寵物公園", "address": "台中市豐原區圓環東路460號1F", "grade": "", "listed": "否", "salesRep": "Titan", "phone": "04-25260112", "city": "台中市", "id": 304, "district": "豐原區"}, {"category": "寵物公園", "name": "屏東民生店寵物公園", "address": "屏東縣屏東市民生路81-5號1F", "grade": "", "listed": "否", "salesRep": "Titan", "phone": "08-7230322", "city": "屏東縣", "id": 305, "district": "屏東市"}, {"category": "小店客戶", "name": "mou貓的美好生活", "address": "台中市西屯區中清路三段121巷78號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "西屯區", "id": 306}, {"category": "小店客戶", "name": "毛毛村 王昱文", "address": "宜蘭縣宜蘭市東港路二段385號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "宜蘭縣", "district": "宜蘭市", "id": 307}, {"category": "小店客戶", "name": "ALIENPET", "address": "台中市太平區環中東路三段656號八樓之六", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "太平區", "id": 308}, {"category": "小店客戶", "name": "三牲工作室", "address": "台北市大同區重慶北路三段315號2樓(10點-17點可收貨)", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大同區", "id": 309}, {"category": "小店客戶", "name": "Meowdi 喵的", "address": "台中市西區五權西三街89號1樓", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "西區", "id": 310}, {"category": "小店客戶", "name": "Just Dog", "address": "台北市大安區建國南路二段223號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大安區", "id": 311}, {"category": "小店客戶", "name": "關於寵物 About", "address": "台中市太平區長億十一街158號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "太平區", "id": 312}, {"category": "小店客戶", "name": "樂森藥局", "address": "台南市北區和緯路二段336號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "北區", "id": 313}, {"category": "小店客戶", "name": "豆哥與凱特", "address": "台中市北屯區僑孝街58號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "北屯區", "id": 314}, {"category": "小店客戶", "name": "酷寶寵物", "address": "", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "其他", "district": "", "id": 315}, {"category": "小店客戶", "name": "小川萌寵2店", "address": "台南市仁德區太乙三街62號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "仁德區", "id": 316}, {"category": "小店客戶", "name": "關門放狗", "address": "台中市北屯區松竹路二段160巷6-1號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "北屯區", "id": 317}, {"category": "小店客戶", "name": "吃手手寵物精品旅館", "address": "", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "其他", "district": "", "id": 318}, {"category": "小店客戶", "name": "包旺家", "address": "台中市北屯區景賢南二路107號之一", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "北屯區", "id": 319}, {"category": "小店客戶", "name": "云晴", "address": "高雄市楠梓區芎蕉一街38號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "高雄市", "district": "楠梓區", "id": 320}, {"category": "小店客戶", "name": "Lolomi", "address": "彰化縣大村鄉中正東路280巷20弄11號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "彰化縣", "district": "大村鄉", "id": 321}, {"category": "小店客戶", "name": "陳文正", "address": "新北市新店區二十張路16巷1弄10號8樓", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "新店區", "id": 322}, {"category": "小店客戶", "name": "小小毛", "address": "台中市西屯區漢口路二段44號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "西屯區", "id": 323}, {"category": "小店客戶", "name": "光六六直播部門", "address": "桃園市桃園區龍壽街81巷12弄5號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "桃園市", "district": "桃園區", "id": 324}, {"category": "小店客戶", "name": "光六六桃園賣場", "address": "桃園市桃園區龍壽街199號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "桃園市", "district": "桃園區", "id": 325}, {"category": "小店客戶", "name": "光六六台中賣場", "address": "台中市南屯區龍富路四段99號", "grade": "", "listed": "", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "南屯區", "id": 326}, {"category": "小店客戶", "name": "免睏寵物", "address": "桃園市蘆竹區新生路246號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "桃園市", "district": "蘆竹區", "id": 327}, {"category": "小店客戶", "name": "好食堂寵物有限公司", "address": "新北市鶯歌區尖山路86號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "新北市", "district": "鶯歌區", "id": 328}, {"category": "小店客戶", "name": "大小通吃生活館", "address": "台中市太平區永豐路117號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "太平區", "id": 329}, {"category": "小店客戶", "name": "劉彥妏", "address": "台北市大安區仁愛路三段53-8號11樓", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大安區", "id": 330}, {"category": "小店客戶", "name": "PetHeat", "address": "台南市南區德興路22號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "南區", "id": 331}, {"category": "小店客戶", "name": "貝果貝果寵物精品", "address": "台南市中西區南門路159號、159-1號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "中西區", "id": 332}, {"category": "小店客戶", "name": "大元氣", "address": "臺南市善化區六德里六分寮207之3號1樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "善化區", "id": 333}, {"category": "小店客戶", "name": "狗日子_公司", "address": "台北市新東街20巷46號1樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "", "id": 334}, {"category": "小店客戶", "name": "NiNiJA妮妮家", "address": "台南市中西區府前路一段90巷71號1樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "中西區", "id": 335}, {"category": "小店客戶", "name": "貝樂星有限公司", "address": "台南市東區富農街一段191巷14號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台南市", "district": "東區", "id": 336}, {"category": "小店客戶", "name": "狗日子_三井", "address": "新北市林口區文化三路一段356號1樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "林口區", "id": 337}, {"category": "小店客戶", "name": "狗日子_信義遠百", "address": "台北市松仁路58號B2", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "", "id": 338}, {"category": "小店客戶", "name": "金吉利-公館店", "address": "台北市中正區汀州路三段100號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "中正區", "id": 339}, {"category": "小店客戶", "name": "金吉利-中華店", "address": "台北市中正區中華路二段179號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "中正區", "id": 340}, {"category": "小店客戶", "name": "金吉利-台大店", "address": "台北市大安區羅斯福路三段327號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大安區", "id": 341}, {"category": "小店客戶", "name": "金吉利-士林店", "address": "台北市士林區文林路122號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "士林區", "id": 342}, {"category": "小店客戶", "name": "金吉利-天母店", "address": "台北市士林區中山北路六段174號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "士林區", "id": 343}, {"category": "小店客戶", "name": "金吉利-林森店", "address": "台北市中山區林森北路362號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "中山區", "id": 344}, {"category": "小店客戶", "name": "金吉利-大直店", "address": "台北市中山區北安路460號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "中山區", "id": 345}, {"category": "小店客戶", "name": "金吉利-錦州店", "address": "台北市中山區錦州街249號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "中山區", "id": 346}, {"category": "小店客戶", "name": "金吉利-內湖店", "address": "台北市內湖區內湖路一段435號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "內湖區", "id": 347}, {"category": "小店客戶", "name": "金吉利-忠孝店", "address": "台北市信義區忠孝東路五段438號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "信義區", "id": 348}, {"category": "小店客戶", "name": "金吉利-延平店", "address": "台北市大同區延平北路二段223號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大同區", "id": 349}, {"category": "小店客戶", "name": "金吉利-復北店", "address": "台北市松山區復興北路187號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "松山區", "id": 350}, {"category": "小店客戶", "name": "金吉利-民權店", "address": "台北市松山區民權東路五段40號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "松山區", "id": 351}, {"category": "小店客戶", "name": "金吉利-饒河店", "address": "台北市松山區八德路四段625號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "松山區", "id": 352}, {"category": "小店客戶", "name": "金吉利-蘆洲店", "address": "新北市蘆洲區集賢路236號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "蘆洲區", "id": 353}, {"category": "小店客戶", "name": "金吉利-板橋店", "address": "新北市板橋區文化路二段239號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "板橋區", "id": 354}, {"category": "小店客戶", "name": "金吉利-板橋二店", "address": "新北市板橋區中山路二段215號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "板橋區", "id": 355}, {"category": "小店客戶", "name": "金吉利-永和店", "address": "新北市永和區永平路14號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "永和區", "id": 356}, {"category": "小店客戶", "name": "金吉利-永和二店", "address": "新北市永和區中正路140號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "永和區", "id": 357}, {"category": "小店客戶", "name": "金吉利-永和三店", "address": "新北市永和區竹林路205號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "永和區", "id": 358}, {"category": "小店客戶", "name": "金吉利-北新店", "address": "新北市新店區北新路三段37號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "新店區", "id": 359}, {"category": "小店客戶", "name": "金吉利-新二店", "address": "新北市新店區中正路178號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "新店區", "id": 360}, {"category": "小店客戶", "name": "金吉利-三重店", "address": "新北市三重區正義北路87號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "三重區", "id": 361}, {"category": "小店客戶", "name": "金吉利-基隆店", "address": "基隆市愛三路71號", "grade": "", "listed": "", "salesRep": "文峰", "phone": "", "city": "基隆市", "district": "", "id": 362}, {"category": "小店客戶", "name": "(S)飛比樂", "address": "台北市大安區永康街8巷10號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大安區", "id": 363}, {"category": "小店客戶", "name": "萊恩家", "address": "台北市文山區和興路8號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "文山區", "id": 364}, {"category": "小店客戶", "name": "百韾寵物生活館", "address": "臺北市文山區順興里興隆路四段１６５巷３７號１樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "文山區", "id": 365}, {"category": "小店客戶", "name": "呼嚕嚕貼貼Purrrrfect Patchy", "address": "台中市南區台中路316號1樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "南區", "id": 366}, {"category": "小店客戶", "name": "三牲工作室（雲端倉）", "address": "台北市大同區重慶北路三段315號2樓(10點-17點可收貨)", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "台北市", "district": "大同區", "id": 367}, {"category": "小店客戶", "name": "毛寵沐場用品小舖", "address": "新北市八里區龍米路一段302號1樓", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "新北市", "district": "八里區", "id": 368}, {"category": "小店客戶", "name": "和凡寵物用品社", "address": "台中市龍井區遊園南路275號", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "龍井區", "id": 369}, {"category": "小店客戶", "name": "艸丁森林寵物用品社", "address": "台中市龍井區遊園南路278號1樓", "grade": "", "listed": "是", "salesRep": "Titan", "phone": "", "city": "台中市", "district": "龍井區", "id": 370}, {"category": "小店客戶", "name": "御貓神社", "address": "宜蘭縣三星鄉大隱中路255巷35號", "grade": "", "listed": "是", "salesRep": "文峰", "phone": "", "city": "宜蘭縣", "district": "三星鄉", "id": 371}];
+ALL_STORES.forEach((s, i) => s.id = i);
+
+const CREDENTIALS = { '88888': {name:'文峰',role:'sales'}, '3333': {name:'Titan',role:'sales'}, '60741974': {name:'Allen',role:'admin'} };
+
+let state = { rep:'', role:'', currentDay:'', plan:{}, newStores:{} };
+const ZIWI_BARCODES=new Set(["9421016590537","9421016590551","9421016590599","9421016590612","9421016592043","9421016592050","9421016592975","9421016592982","9421016593163","9421016593170","9421016593309","9421016593965","9421016593989","9421016594009","9421016594023","9421016594115","9421016594139","9421016594177","9421016594269","9421016594283","9421016594306","9421016594320","9421016594405","9421016594429","9421016594443","9421016594467","9421016594481","9421016594504","9421016594528","9421016594542","9421016594566","9421016594764","9421016594788","9421016594801","9421016594849","9421016594863","9421016594887","9421016594900","9421016595648","9421016595679","9421016595693","9421016595754","9421016595778","9421016595792","9421016595815","9421016595914","9421016595952","9421016596461","9421016596478","9421016596485","9421016596492","9421016596508","9421016596522","9421016596539","9421016596546","9421016596553","9421016596904","9421016597147","9421016597185","9421038210000","9421038210017","9421038210024","9421038210031","9421038210048","9421038210055","9421038210062","9421038210079","9421038210086","9421038210093","9421038210109","9421038210116","9421038210123","9421038210130","9421038210147","9421038210307","9421038210314","9421038210321","9421038210338","9421038210345","9421038210352","9421038211090","9421038211106","9421038211113","9421038211151","9421038211168","9421038211175"]);
+let orderData = { matched: [], unmatched: [], storeOrders: {}, skipped: [] };
+
+const DAY_NAMES = ['一','二','三','四','五','六','日'];
+const DAY_LABELS = {'一':'週一','二':'週二','三':'週三','四':'週四','五':'週五','六':'週六','日':'週日'};
+// 國定假日（格式：MM/DD）
+const HOLIDAYS={'1/1':'元旦','1/27':'除夕','1/28':'春節','1/29':'春節','1/30':'春節','1/31':'春節','2/1':'春節','2/8':'補班日','2/28':'和平紀念日','4/3':'兒童節','4/4':'清明節','5/1':'勞動節','5/31':'端午節','6/21':'補班日','9/29':'中秋節','10/10':'國慶日'};
+function isHoliday(d){return HOLIDAYS[(d.getMonth()+1)+'/'+d.getDate()]||null}
+
+function getNextWeekDates(){
+  const today=new Date(),dow=today.getDay(),d=dow===0?1:8-dow;
+  const mon=new Date(today);mon.setDate(today.getDate()+d);
+  const dates={};DAY_NAMES.forEach((n,i)=>{const dt=new Date(mon);dt.setDate(mon.getDate()+i);dates[n]=dt});return dates;
+}
+const NWD=getNextWeekDates();
+const fmt=d=>`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+const fmtShort=d=>`${d.getMonth()+1}/${d.getDate()}`;
+const weekKey=fmt(NWD['一']).replace(/\//g,'');
+
+// ===== STORAGE =====
+const API_URL='https://script.google.com/macros/s/AKfycbxbf7Ae0klQnyIJ9W13qXPrj4l7eA1CWjfLwyt_acHcqyGWqIOtZSBIV-G10IPbp_krCA/exec';
+const DRAFT_KEY='visitPlan_v5';const HISTORY_KEY='visitHistory_v1';const ORDER_KEY='orderData_v1';
+
+// ===== API 呼叫 =====
+async function callAPI(body){
+  try{
+    const res=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify(body)});
+    const json=await res.json();
+    if(!json.success)throw new Error(json.error||'API錯誤');
+    return json.data;
+  }catch(err){console.error('API error:',err);return null}
+}
+function showToast(msg,isErr){
+  let t=document.getElementById('toast');
+  if(!t){t=document.createElement('div');t.id='toast';t.style.cssText='position:fixed;top:70px;left:50%;transform:translateX(-50%);padding:10px 24px;border-radius:8px;font-size:13px;font-weight:600;z-index:999;transition:opacity .3s;pointer-events:none';document.body.appendChild(t)}
+  t.style.background=isErr?'var(--red)':'var(--green)';t.style.color='#fff';t.textContent=msg;t.style.opacity='1';
+  setTimeout(()=>{t.style.opacity='0'},2500);
+}
+
+function loadDraft(){try{const s=JSON.parse(localStorage.getItem(DRAFT_KEY));if(s?.rep){state={...state,...s};if(!state.newStores)state.newStores={};return true}}catch(e){}return false}
+function saveDraftQuiet(){localStorage.setItem(DRAFT_KEY,JSON.stringify(state));const el=document.getElementById('draftBadge');el.style.display='inline-flex';el.textContent='💾 已暫存'}
+function saveDraft(){saveDraftQuiet();goStep(2)}
+function clearDraft(){localStorage.removeItem(DRAFT_KEY);document.getElementById('draftBadge').style.display='none'}
+function getHistory(){try{return JSON.parse(localStorage.getItem(HISTORY_KEY))||{}}catch(e){return{}}}
+function saveToHistory(){
+  const h=getHistory(),ids=[];
+  DAY_NAMES.forEach(day=>{const dp=state.plan[day]||{};Object.entries(dp).forEach(([id,v])=>{if(v.selected)ids.push(parseInt(id))})});
+  const ns=[];DAY_NAMES.forEach(day=>{(state.newStores[day]||[]).forEach(s=>ns.push(s))});
+  if(!h[weekKey])h[weekKey]={};h[weekKey][state.rep]={storeIds:ids,newStores:ns};
+  localStorage.setItem(HISTORY_KEY,JSON.stringify(h));
+  // 同步上傳到 Google Drive
+  callAPI({action:'saveVisitPlan',weekKey,rep:state.rep,plan:state.plan,newStores:state.newStores})
+    .then(r=>{if(r)showToast('✅ 已上傳到雲端');else showToast('⚠️ 雲端上傳失敗，資料已暫存本地',true)});
+}
+function loadOrderData(){try{const d=JSON.parse(localStorage.getItem(ORDER_KEY));if(d?.weekKey===weekKey){orderData=d;return true}}catch(e){}return false}
+function saveOrderDataLS(){localStorage.setItem(ORDER_KEY,JSON.stringify({...orderData,weekKey}))}
+
+// ===== STORE MATCHING =====
+function matchStoreByName(recipient){
+  if(!recipient)return null;
+  const r=recipient.trim();
+  // Try exact-ish matching
+  for(const s of ALL_STORES){
+    const n=s.name;
+    // Direct contains
+    if(r.includes(n)||n.includes(r))return s;
+    // Without common prefixes
+    const shorts=[n.replace(/^魚-/,'').replace(/^狗-/,'').replace(/^樂活魚-/,''),
+                  n.replace(/店寵物公園$/,'店').replace(/寵物公園$/,'')];
+    for(const sh of shorts){if(sh.length>=2&&(r.includes(sh)||sh.includes(r)))return s;}
+    // Try matching with 東森 prefix removal
+    if(r.startsWith('東森')&&n.includes(r.replace('東森','')))return s;
+  }
+  return null;
+}
+
+// ===== LOGIN =====
+function doLogin(){
+  const pwd=document.getElementById('pwdInput').value.trim();
+  const cred=CREDENTIALS[pwd];
+  if(!cred){
+    document.getElementById('loginErr').textContent='密碼錯誤，請重新輸入';
+    document.getElementById('pwdInput').classList.add('error');
+    setTimeout(()=>document.getElementById('pwdInput').classList.remove('error'),500);return;
+  }
+  state.rep=cred.name;state.role=cred.role;
+  document.getElementById('headerInfo').textContent=cred.role==='admin'?`管理員：${cred.name}`:`業務員：${cred.name}`;
+  document.getElementById('btnLogout').style.display='';
+  document.getElementById('btnReset').style.display='';
+
+  if(cred.role==='admin'){
+    loadOrderData();
+    goStep(5);
+  } else {
+    const saved=localStorage.getItem(DRAFT_KEY);
+    if(saved){const d=JSON.parse(saved);
+      if(d.rep===cred.name&&(Object.keys(d.plan||{}).length||Object.keys(d.newStores||{}).length)){
+        if(confirm(`發現 ${cred.name} 的暫存資料，要繼續編輯嗎？`)){state={...state,...d};if(!state.newStores)state.newStores={}}
+        else{state.plan={};state.newStores={};clearDraft()}
+      }
+    }
+    goStep(2);
+  }
+}
+function logout(){
+  if(state.role==='sales'&&(getTotalSelected()+getTotalNewStores()>0))saveDraftQuiet();
+  state={rep:'',role:'',currentDay:'',plan:{},newStores:{}};
+  document.getElementById('headerInfo').textContent='請登入';
+  document.getElementById('btnLogout').style.display='none';
+  document.getElementById('btnReset').style.display='none';
+  document.getElementById('pwdInput').value='';document.getElementById('loginErr').textContent='';
+  goStep(0);
+}
+
+async function resetMyData(){
+  const name=state.rep;const role=state.role;
+  if(role==='sales'){
+    if(!confirm(`確定要刷新 ${name} 的本週所有拜訪數據嗎？\n本地與雲端資料都會清除，此操作無法復原！`))return;
+    clearDraft();
+    const h=getHistory();
+    if(h[weekKey]&&h[weekKey][name]){delete h[weekKey][name];localStorage.setItem(HISTORY_KEY,JSON.stringify(h))}
+    state.plan={};state.newStores={};state.currentDay='';
+    // 同步刪除雲端
+    await callAPI({action:'resetData',weekKey,rep:name,role});
+    showToast(`✅ 已清除 ${name} 的本週數據（本地+雲端）`);
+    goStep(2);
+  } else if(role==='admin'){
+    if(!confirm('確定要刷新本週訂單數據嗎？\n本地與雲端資料都會清除，此操作無法復原！'))return;
+    localStorage.removeItem(ORDER_KEY);
+    orderData={matched:[],unmatched:[],storeOrders:{},skipped:[]};
+    document.getElementById('orderResults').style.display='none';
+    await callAPI({action:'resetData',weekKey,rep:name,role});
+    showToast('✅ 已清除本週訂單數據（本地+雲端）');
+    goStep(5);
+  }
+}
+
+// ===== NAV =====
+let currentTab='stores';
+function goStep(n){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page'+n).classList.add('active');
+
+  // Update step bar for role
+  const stepBar=document.getElementById('stepBar');
+  if(n===5){stepBar.style.display='none'}else{stepBar.style.display='flex';
+    document.querySelectorAll('.step').forEach(s=>{const sn=parseInt(s.dataset.step);s.classList.toggle('active',sn===n);s.classList.toggle('done',sn<n)});}
+
+  document.getElementById('bottomBar').style.display=n===3?'flex':'none';
+  if(n===0)document.getElementById('pwdInput').focus();
+  if(n===2)renderWeek();if(n===3){renderRegions();renderStores();renderNewStores()}
+  if(n===4)renderSummary();if(n===5){renderRepStatus();renderOrderResults();}
+  window.scrollTo(0,0);
+}
+function switchTab(tab){currentTab=tab;document.getElementById('tabStores').classList.toggle('active',tab==='stores');document.getElementById('tabNewStore').classList.toggle('active',tab==='newstore');document.getElementById('panelStores').style.display=tab==='stores'?'':'none';document.getElementById('panelNewStore').style.display=tab==='newstore'?'':'none'}
+
+// ===== WEEK =====
+function renderWeek(){
+  const rs=ALL_STORES.filter(s=>s.salesRep===state.rep);
+  document.getElementById('repTitle').textContent=`${state.rep} 的下週拜訪排程`;
+  document.getElementById('weekLabel').textContent=`${fmt(NWD['一'])}（一）～ ${fmt(NWD['日'])}（日）｜負責店家 ${rs.length} 間`;
+  document.getElementById('weekGrid').innerHTML=DAY_NAMES.map(day=>{
+    const cnt=getDayCount(day)+getNewStoreCount(day),isWE=day==='六'||day==='日';
+    const hol=isHoliday(NWD[day]);const isH=!!hol;
+    return`<div class="day-card ${isWE?'weekend':''} ${isH?'holiday':''}" onclick="selectDay('${day}')"><div class="dow">${DAY_LABELS[day]}</div><div class="date">${fmtShort(NWD[day])}</div>${isH?'<div class="holiday-tag">'+hol+'</div>':''}<div class="count ${cnt?'':'zero'}">${cnt}</div><div class="count-lbl">間店</div></div>`;}).join('');
+}
+function getDayCount(day){return state.plan[day]?Object.values(state.plan[day]).filter(v=>v.selected).length:0}
+function getNewStoreCount(day){return(state.newStores[day]||[]).length}
+function getTotalSelected(){let t=0;DAY_NAMES.forEach(d=>t+=getDayCount(d));return t}
+function getTotalNewStores(){let t=0;DAY_NAMES.forEach(d=>t+=getNewStoreCount(d));return t}
+function selectDay(day){state.currentDay=day;if(!state.plan[day])state.plan[day]={};if(!state.newStores[day])state.newStores[day]=[];switchTab('stores');goStep(3)}
+
+// ===== STORES =====
+let currentRegion='',currentDistrict='';
+function getRepStores(){return ALL_STORES.filter(s=>s.salesRep===state.rep)}
+function getRegions(){const rc={};getRepStores().forEach(s=>rc[s.city]=(rc[s.city]||0)+1);return Object.entries(rc).sort((a,b)=>b[1]-a[1])}
+function getDistricts(){if(!currentRegion)return[];const dc={};getRepStores().filter(s=>s.city===currentRegion).forEach(s=>{if(s.district)dc[s.district]=(dc[s.district]||0)+1});return Object.entries(dc).sort((a,b)=>b[1]-a[1])}
+function renderRegions(){
+  document.getElementById('planTitle').textContent=`${DAY_LABELS[state.currentDay]}（${fmtShort(NWD[state.currentDay])}）— 安排拜訪`;
+  const regions=getRegions();
+  document.getElementById('regionList').innerHTML=`<div class="region-chip ${!currentRegion?'active':''}" onclick="setRegion('')">全部<span class="cnt">${getRepStores().length}</span></div>`+regions.map(([r,c])=>`<div class="region-chip ${currentRegion===r?'active':''}" onclick="setRegion('${r}')">${r}<span class="cnt">${c}</span></div>`).join('');
+  const districts=getDistricts();const dl=document.getElementById('districtList');
+  if(!currentRegion||districts.length<2){dl.innerHTML='';return}
+  dl.innerHTML=`<div class="region-chip ${!currentDistrict?'active':''}" onclick="setDistrict('')" style="font-size:12px;padding:5px 12px">全${currentRegion}<span class="cnt">${getRepStores().filter(s=>s.city===currentRegion).length}</span></div>`+districts.map(([d,c])=>`<div class="region-chip ${currentDistrict===d?'active':''}" onclick="setDistrict('${d}')" style="font-size:12px;padding:5px 12px">${d}<span class="cnt">${c}</span></div>`).join('');
+}
+function setRegion(r){currentRegion=r;currentDistrict='';renderRegions();renderStores()}
+function setDistrict(d){currentDistrict=d;renderRegions();renderStores()}
+function renderStores(){
+  const day=state.currentDay,dp=state.plan[day]||{};
+  let stores=getRepStores();
+  if(currentRegion)stores=stores.filter(s=>s.city===currentRegion);
+  if(currentDistrict)stores=stores.filter(s=>s.district===currentDistrict);
+  const fC=document.getElementById('fCat').value;if(fC)stores=stores.filter(s=>s.category===fC);
+  const fG=document.getElementById('fGrade').value;if(fG)stores=stores.filter(s=>s.grade===fG);
+  const fL=document.getElementById('fListed').value;if(fL)stores=stores.filter(s=>s.listed===fL);
+  const q=document.getElementById('fSearch').value.trim().toLowerCase();
+  if(q)stores=stores.filter(s=>s.name.toLowerCase().includes(q)||s.address.toLowerCase().includes(q));
+  stores.sort((a,b)=>(dp[b.id]?.selected?1:0)-(dp[a.id]?.selected?1:0));
+  const list=document.getElementById('storeList');
+  if(!stores.length){list.innerHTML='<div class="empty-msg">沒有符合條件的店家</div>'}
+  else{list.innerHTML=stores.map(s=>{
+    const ck=dp[s.id]?.selected,note=dp[s.id]?.note||'';
+    const cn=catLabel(s.category);
+    return`<div><div class="store-item ${ck?'checked':''}" onclick="toggleStore(${s.id})"><input type="checkbox" ${ck?'checked':''} onclick="event.stopPropagation();toggleStore(${s.id})"><div class="store-info"><div class="store-name">${esc(s.name)}</div><div class="store-detail">📍 ${esc(s.address)}</div></div><div class="store-badges"><span class="badge b-cat">${cn}</span>${s.grade?`<span class="badge b-${s.grade}">${s.grade}</span>`:''}${s.category==='小店客戶'?`<span class="badge ${s.listed==='是'?'b-listed':'b-unlisted'}">${s.listed==='是'?'已進貨':'未進貨'}</span>`:`<span class="badge ${s.listed==='是'?'b-listed':'b-unlisted'}">${s.listed==='是'?'已上架':'未上架'}</span>`}</div></div>${ck?`<div class="note-row"><input placeholder="備註（選填）" value="${esc(note)}" onchange="setNote(${s.id},this.value)" onclick="event.stopPropagation()"></div>`:''}</div>`;}).join('')}
+  const cnt=getDayCount(day),nsc=getNewStoreCount(day);
+  document.getElementById('bottomInfo').textContent=`${DAY_LABELS[day]} — 既有 ${cnt} 間 ＋ 小店 ${nsc} 間`;
+}
+function toggleStore(id){const day=state.currentDay;if(!state.plan[day])state.plan[day]={};if(state.plan[day][id]?.selected)delete state.plan[day][id];else state.plan[day][id]={selected:true,note:''};renderStores();saveDraftQuiet()}
+function setNote(id,val){if(state.plan[state.currentDay]?.[id])state.plan[state.currentDay][id].note=val}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+// ===== NEW STORES =====
+function addNewStore(){
+  const name=document.getElementById('nsName').value.trim();if(!name){alert('請填寫店名！');document.getElementById('nsName').focus();return}
+  const day=state.currentDay;if(!state.newStores[day])state.newStores[day]=[];
+  state.newStores[day].push({name,addr:document.getElementById('nsAddr').value.trim(),phone:document.getElementById('nsPhone').value.trim(),note:document.getElementById('nsNote').value.trim()});
+  ['nsName','nsAddr','nsPhone','nsNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('nsName').focus();renderNewStores();saveDraftQuiet();
+}
+function removeNewStore(idx){state.newStores[state.currentDay].splice(idx,1);renderNewStores();saveDraftQuiet()}
+function renderNewStores(){
+  const list=state.newStores[state.currentDay]||[],el=document.getElementById('newStoreList'),emptyEl=document.getElementById('newStoreEmpty');
+  if(!list.length){el.innerHTML='';emptyEl.style.display='';return}emptyEl.style.display='none';
+  el.innerHTML=list.map((s,i)=>`<div class="newstore-item"><span style="font-size:16px">🆕</span><div class="store-info"><div class="store-name">${esc(s.name)} <span class="badge b-new">小店開發</span></div><div class="store-detail">${s.addr?'📍 '+esc(s.addr):''}${s.phone?' ☎ '+esc(s.phone):''}${s.note?' 📝 '+esc(s.note):''}</div></div><button class="newstore-del" onclick="removeNewStore(${i})">✕</button></div>`).join('');
+  const cnt=getDayCount(state.currentDay),nsc=getNewStoreCount(state.currentDay);
+  document.getElementById('bottomInfo').textContent=`${DAY_LABELS[state.currentDay]} — 既有 ${cnt} 間 ＋ 小店 ${nsc} 間`;
+}
+
+// ===== SUMMARY =====
+function renderSummary(){
+  const total=getTotalSelected()+getTotalNewStores();
+  document.getElementById('summarySubtitle').textContent=`${state.rep} — 共安排 ${total} 間拜訪`;
+  const body=document.getElementById('summaryBody');
+  if(!total){body.innerHTML='<div class="empty-msg">尚未安排任何拜訪</div>';return}
+  let html='';
+  DAY_NAMES.forEach(day=>{
+    const dp=state.plan[day]||{},entries=Object.entries(dp).filter(([_,v])=>v.selected),ns=state.newStores[day]||[];
+    if(!entries.length&&!ns.length)return;
+    const isWE=day==='六'||day==='日';
+    html+=`<div class="sum-card" ${isWE?'style="border-left:4px solid var(--orange)"':''}><h4>${DAY_LABELS[day]}（${fmt(NWD[day])}）— ${entries.length+ns.length} 間</h4>`;
+    if(entries.length){const byCity={};entries.forEach(([id,v])=>{const s=ALL_STORES[parseInt(id)];(byCity[s.city]=byCity[s.city]||[]).push({...s,note:v.note})});
+      for(const[city,list]of Object.entries(byCity)){html+=`<div style="margin-bottom:6px"><strong style="font-size:12px;color:var(--blue)">${city}（${list.length}）</strong>`;
+        list.forEach(s=>{const cn=catLabel(s.category);html+=`<div class="sum-store">▸ <strong>${s.name}</strong>（${cn}${s.grade?' '+s.grade:''}）<span style="font-size:11px">${s.address}</span>${s.note?' — <em>'+s.note+'</em>':''}</div>`});html+='</div>'}}
+    if(ns.length){html+=`<div style="margin-bottom:6px"><strong style="font-size:12px;color:var(--purple)">🆕 小店開發（${ns.length}）</strong>`;ns.forEach(s=>{html+=`<div class="sum-store sum-new">▸ <strong>${s.name}</strong>${s.addr?' — '+s.addr:''}${s.note?' （'+s.note+'）':''}</div>`});html+='</div>'}
+    html+='</div>'});
+  body.innerHTML=html;
+}
+
+// ===== ALLEN: ORDER HANDLING =====
+function handleOrderFile(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const data=new Uint8Array(e.target.result);
+    const wb=XLSX.read(data,{type:'array'});
+    const ws=wb.Sheets[wb.SheetNames[0]];
+    // 用欄位代號讀取（A,B,C...），避免標題名稱不一致
+    const rows=XLSX.utils.sheet_to_json(ws,{header:'A',defval:''});
+    rows.shift(); // 移除標題列
+
+    // Parse orders: group by C(訂單編號), L欄條碼比對ZIWI商品清單, 金額=K(單價)*O(數量)
+    const orders={};
+    rows.forEach(r=>{
+      const oid=r.C;if(!oid)return; // C=訂單編號
+      if(!orders[oid]){
+        orders[oid]={
+          id:oid, shop:r.H||'', recipient:r.Z||'', // H=賣場名稱, Z=收件人姓名
+          amount:0, addr:''
+        };
+      }
+      // L=國際條碼，比對ZIWI商品清單；金額 = K(單價) × O(數量)
+      const barcode=String(r.L||'').trim();
+      if(barcode&&ZIWI_BARCODES.has(barcode)){
+        const price=parseFloat(r.K)||0;
+        const qty=parseFloat(r.O)||0;
+        if(price&&qty)orders[oid].amount+=price*qty;
+      }
+    });
+
+    // Match to stores - only B端通路 orders
+    const totalOrderCount=Object.keys(orders).length;
+    orderData={matched:[],unmatched:[],storeOrders:{},skipped:[]};
+
+    Object.values(orders).forEach(ord=>{
+      // 只比對B端通路訂單，過濾掉蝦皮/官網等其他部門
+      if(!ord.shop||!ord.shop.includes('B端')){orderData.skipped.push(ord);return}
+      const store=matchStoreByName(ord.recipient);
+      if(store){
+        orderData.matched.push({...ord,storeId:store.id,storeName:store.name,category:store.category});
+        if(!orderData.storeOrders[store.id])orderData.storeOrders[store.id]={count:0,amount:0};
+        orderData.storeOrders[store.id].count++;
+        orderData.storeOrders[store.id].amount+=ord.amount;
+      } else {
+        orderData.unmatched.push(ord);
+      }
+    });
+
+    renderOrderResults();
+    document.getElementById('orderResults').style.display='block';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function renderRepStatus(){
+  const wkRange=weekRange();
+  document.getElementById('allenWeekLabel').textContent=wkRange;
+  const panel=document.getElementById('repStatusPanel');
+  panel.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">⏳ 正在從雲端讀取...</div>';
+
+  // 從 Google Drive 讀取所有人的狀態
+  const cloudData=await callAPI({action:'getAllStatus',weekKey});
+
+  // 同時讀本地 localStorage 做備援
+  const h=getHistory();const localData=h[weekKey]||{};
+
+  const reps=['文峰','Titan'];
+  panel.innerHTML=reps.map(rep=>{
+    // 優先用雲端資料，備援用本地
+    const cloud=cloudData?.[rep];
+    const local=localData[rep];
+    const hasPlan=!!(cloud||local);
+
+    let ids=[],ns=[],planInfo='',statusTag='',statusClass='';
+
+    if(cloud){
+      // 雲端有資料：從 plan 計算門市數
+      const plan=cloud.plan||{};
+      DAY_NAMES.forEach(day=>{const dp=plan[day]||{};Object.entries(dp).forEach(([id,v])=>{if(v.selected)ids.push(parseInt(id))})});
+      ns=cloud.newStores?DAY_NAMES.reduce((a,d)=>[...a,...(cloud.newStores[d]||[])],[]):[];
+      planInfo='☁️ 雲端';
+    } else if(local){
+      ids=local.storeIds||[];ns=local.newStores||[];
+      planInfo='💾 本地';
+    }
+
+    const total=ids.length+ns.length;
+    if(!hasPlan){statusTag='尚未填寫';statusClass='tag-empty'}
+    else if(total>0){statusTag=`${planInfo} 已安排 ${total} 間`;statusClass='tag-done'}
+    else{statusTag='已登入但未安排';statusClass='tag-pending'}
+
+    let detailHtml='';
+    if(hasPlan&&ids.length){
+      // 等級統計
+      const gradeCount={A:0,B:0,C:0,D:0};
+      // 上架/未上架統計
+      let listedVisit=0,unlistedVisit=0;
+      // 通路統計
+      const cats={'東森寵物':0,'魚中魚':0,'寵物公園':0,'小店客戶':0};
+
+      ids.forEach(id=>{
+        const s=ALL_STORES[id];if(!s)return;
+        cats[s.category]=(cats[s.category]||0)+1;
+        if(s.grade&&gradeCount[s.grade]!==undefined)gradeCount[s.grade]++;
+        if(s.listed==='是')listedVisit++;else unlistedVisit++;
+      });
+
+      // 通路
+      detailHtml+='<div style="margin-top:8px;font-size:12px;color:var(--blue);font-weight:700;margin-bottom:4px">📍 通路</div>';
+      detailHtml+=Object.entries(cats).map(([c,n])=>
+        `<div class="rep-day"><span class="day-name">${catLabel(c)}</span><span class="day-cnt ${n?'has':'zero'}">${n} 間</span></div>`
+      ).join('');
+
+      // 等級
+      detailHtml+='<div style="margin-top:10px;font-size:12px;color:var(--orange);font-weight:700;margin-bottom:4px">📊 等級</div>';
+      detailHtml+=['A','B','C','D'].map(g=>
+        `<div class="rep-day"><span class="day-name">${g} 級</span><span class="day-cnt ${gradeCount[g]?'has':'zero'}">${gradeCount[g]} 間</span></div>`
+      ).join('');
+
+      // 上架狀態
+      detailHtml+='<div style="margin-top:10px;font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px">🏷️ 上架狀態</div>';
+      detailHtml+=`<div class="rep-day"><span class="day-name">已上架（回頭拜訪）</span><span class="day-cnt ${listedVisit?'has':'zero'}">${listedVisit} 間</span></div>`;
+      detailHtml+=`<div class="rep-day"><span class="day-name">未上架（開發）</span><span class="day-cnt ${unlistedVisit?'has':'zero'}">${unlistedVisit} 間</span></div>`;
+
+      // 小店開發
+      if(ns.length){
+        detailHtml+='<div style="margin-top:10px;font-size:12px;color:var(--purple);font-weight:700;margin-bottom:4px">🆕 小店開發</div>';
+        detailHtml+=`<div class="rep-day"><span class="day-name">新開發小店</span><span class="day-cnt has">${ns.length} 間</span></div>`;
+      }
+    }
+
+    return`<div class="rep-card"><h3>👤 ${rep}</h3><span class="status-tag ${statusClass}">${statusTag}</span>${detailHtml}</div>`;
+  }).join('');
+
+  // 如果雲端有訂單資料，自動載入
+  if(cloudData?.order?.orderData){
+    orderData=cloudData.order.orderData;
+    saveOrderDataLS();
+  }
+}
+
+function renderOrderResults(){
+  if(!orderData.matched.length&&!orderData.unmatched.length){document.getElementById('orderResults').style.display='none';return}
+  document.getElementById('orderResults').style.display='block';
+
+  const totalAmt=orderData.matched.reduce((s,o)=>s+o.amount,0);
+  const bTotal=orderData.matched.length+orderData.unmatched.length;
+  const skipCount=(orderData.skipped||[]).length;
+  document.getElementById('orderStats').innerHTML=`
+    <div class="order-stat"><div class="num">${bTotal+skipCount}</div><div class="lbl">總訂單數</div></div>
+    <div class="order-stat"><div class="num">${bTotal}</div><div class="lbl">B端通路</div></div>
+    <div class="order-stat"><div class="num" style="color:#999">${skipCount}</div><div class="lbl">非B端(已略過)</div></div>
+    <div class="order-stat"><div class="num">${orderData.matched.length}</div><div class="lbl">已比對門市</div></div>
+    <div class="order-stat"><div class="num red">${orderData.unmatched.length}</div><div class="lbl">B端未比對</div></div>
+    <div class="order-stat"><div class="num">$${totalAmt.toLocaleString()}</div><div class="lbl">門市成交金額</div></div>
+    <div class="order-stat"><div class="num">${Object.keys(orderData.storeOrders).length}</div><div class="lbl">成交門市數</div></div>`;
+
+  document.getElementById('matchedBody').innerHTML=orderData.matched.map(o=>
+    `<tr><td>${o.id}</td><td>${esc(o.recipient)}</td><td class="match-ok">${esc(o.storeName)}</td><td>${esc(o.category)}</td><td style="text-align:right">$${o.amount.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-msg">無</td></tr>';
+
+  document.getElementById('unmatchedBody').innerHTML=orderData.unmatched.map(o=>
+    `<tr><td>${o.id}</td><td class="match-fail">${esc(o.recipient)}</td><td>${esc(o.shop)}</td><td style="text-align:right">$${o.amount.toLocaleString()}</td></tr>`).join('')||'<tr><td colspan="4" class="empty-msg">全部比對成功！</td></tr>';
+}
+
+async function saveOrderData(){
+  saveOrderDataLS();
+  showToast('正在上傳到雲端...');
+  const r=await callAPI({action:'saveOrderData',weekKey,orderData});
+  if(r)showToast('✅ 訂單資料已儲存到雲端');
+  else showToast('⚠️ 雲端上傳失敗，資料已暫存本地',true);
+}
+
+function exportAllenReport(){
+  if(!orderData.matched.length&&!orderData.unmatched.length){alert('請先上傳訂單資料');return}
+  saveOrderDataLS();
+  const wb=XLSX.utils.book_new();
+  const wkShort=weekRangeShort();
+  const cumHeader=wkShort+'累積拜訪次數';
+  const visitHeader=wkShort+'是否拜訪';
+  const h=getHistory();
+
+  // Sheet 1: 當週拜訪計劃 (from all reps history)
+  const s1rows=[];
+  DAY_NAMES.forEach(day=>{
+    for(const[rep,data]of Object.entries(h[weekKey]||{})){
+      (data.storeIds||[]).forEach(id=>{
+        const s=ALL_STORES[id];if(!s)return;
+        const so=orderData.storeOrders[id];
+        s1rows.push({'業務員':rep,'星期':DAY_LABELS[day],'日期':fmt(NWD[day]),'通路':catLabel(s.category),'店名':s.name,'等級':s.grade,'上架':s.listed,'地址':s.address,
+          '當週訂單數':so?so.count:'','當週成交金額':so?so.amount:''});
+      });
+    }
+  });
+  if(!s1rows.length){
+    orderData.matched.forEach(o=>{
+      s1rows.push({'訂單編號':o.id,'收件人':o.recipient,'比對門市':o.storeName,'通路':catLabel(o.category),'金額':o.amount})});
+  }
+  const ws1=XLSX.utils.json_to_sheet(s1rows);
+  ws1['!cols']=s1rows[0]?.['業務員']!==undefined?[{wch:8},{wch:6},{wch:12},{wch:10},{wch:22},{wch:5},{wch:5},{wch:36},{wch:10},{wch:14}]:[{wch:16},{wch:18},{wch:22},{wch:10},{wch:12}];
+  XLSX.utils.book_append_sheet(wb,ws1,'當週拜訪計劃');
+
+  // Sheet 2~4: 門市拜訪紀錄 — 依通路拆成三個 Sheet
+  const thisWeekVisited=new Set();
+  for(const[rep,data]of Object.entries(h[weekKey]||{})){(data.storeIds||[]).forEach(id=>thisWeekVisited.add(id))}
+  const channels=[{cat:'東森寵物',label:'東森寵物'},{cat:'魚中魚',label:'魚中魚'},{cat:'寵物公園',label:'萬達'},{cat:'小店客戶',label:'小店客戶'}];
+  channels.forEach(ch=>{
+    const rows=ALL_STORES.filter(s=>s.category===ch.cat).map(s=>{
+      let cumT=0;for(const[wk,reps]of Object.entries(h)){if(reps[s.salesRep]?.storeIds?.includes(s.id))cumT++}
+      const so=orderData.storeOrders[s.id];
+      const row={'店名':s.name,'等級':s.grade,'上架':s.listed,'地址':s.address,'負責業務員':s.salesRep};
+      row[visitHeader]=thisWeekVisited.has(s.id)?'✓':'';
+      row[cumHeader]=cumT;
+      row['當週訂單數']=so?so.count:'';
+      row['當週成交金額(NT$)']=so?so.amount:'';
+      return row;
+    });
+    const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:22},{wch:5},{wch:5},{wch:36},{wch:10},{wch:14},{wch:18},{wch:10},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,ch.label+'拜訪紀錄');
+  });
+
+  // Sheet 5: 是否上架 拜訪頻率
+  const freqRows=ALL_STORES.map(s=>{
+    let cumT=0;for(const[wk,reps]of Object.entries(h)){if(reps[s.salesRep]?.storeIds?.includes(s.id))cumT++}
+    const row={'通路':catLabel(s.category),'店名':s.name,'等級':s.grade,'是否上架':s.listed||'','負責業務員':s.salesRep};
+    row[cumHeader]=cumT;
+    row[visitHeader]=thisWeekVisited.has(s.id)?'✓':'';
+    return row;
+  });
+  const wsF=XLSX.utils.json_to_sheet(freqRows);wsF['!cols']=[{wch:10},{wch:22},{wch:5},{wch:8},{wch:10},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsF,'上架與拜訪頻率');
+
+  // Sheet 6: 等級拜訪統計
+  const cats=['東森寵物','魚中魚','寵物公園','小店客戶'],grades=['A','B','C','D'];
+  const s3rows=[];
+  cats.forEach(cat=>{grades.forEach(grade=>{
+    const subset=ALL_STORES.filter(s=>s.category===cat&&s.grade===grade);if(!subset.length)return;
+    let wfW=0,ttW=0,wfC=0,ttC=0,ordCnt=0,ordAmt=0;
+    subset.forEach(s=>{
+      if(thisWeekVisited.has(s.id)){if(s.salesRep==='文峰')wfW++;else ttW++}
+      for(const[wk,reps]of Object.entries(h)){if(reps['文峰']?.storeIds?.includes(s.id))wfC++;if(reps['Titan']?.storeIds?.includes(s.id))ttC++}
+      const so=orderData.storeOrders[s.id];if(so){ordCnt+=so.count;ordAmt+=so.amount}
+    });
+    const row={'通路':catLabel(cat),'等級':grade,'門店總數':subset.length};
+    row[wkShort+'文峰拜訪']=wfW;row[wkShort+'Titan拜訪']=ttW;
+    row['文峰累計拜訪']=wfC;row['Titan累計拜訪']=ttC;
+    row['當週訂單數']=ordCnt;row['當週成交金額']=ordAmt;
+    s3rows.push(row);
+  })});
+  const ws3=XLSX.utils.json_to_sheet(s3rows);
+  ws3['!cols']=[{wch:10},{wch:5},{wch:8},{wch:16},{wch:16},{wch:12},{wch:12},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws3,'等級拜訪統計');
+
+  const allenFile=`${weekKey}_Allen_業務週報.xlsx`;
+  XLSX.writeFile(wb,allenFile);
+  const xlsxData=XLSX.write(wb,{type:'base64',bookType:'xlsx'});
+  callAPI({action:'uploadExcel',weekKey,fileName:allenFile,base64Data:xlsxData})
+    .then(r=>{if(r)showToast('✅ 週報已同步上傳雲端');else showToast('⚠️ 雲端上傳失敗',true)});
+}
+
+// ===== SALES EXPORT =====
+function confirmAndSend(){
+  const total=getTotalSelected()+getTotalNewStores();if(!total){alert('尚未安排任何拜訪！');return}
+  saveToHistory();loadOrderData();downloadExcel();
+  document.getElementById('confirmModal').classList.add('show');
+  document.getElementById('modalMsg').textContent=`已下載 ${state.rep} 的拜訪計劃（${total} 間）。\n資料已同步上傳到雲端。`;
+}
+function catLabel(c){return c==='寵物公園'?'萬達':c}
+function weekRange(){return `${fmt(NWD['一'])} ~ ${fmt(NWD['日'])}`}
+function weekRangeShort(){return `${fmtShort(NWD['一'])}~${fmtShort(NWD['日'])}`}
+
+function generateExcel(){
+  const wb=XLSX.utils.book_new();
+  const wkShort=weekRangeShort();
+  const cumHeader=wkShort+'累積拜訪次數';
+  const visitHeader=wkShort+'是否拜訪';
+
+  // Sheet 1: 當週拜訪計劃
+  const s1=[];DAY_NAMES.forEach(day=>{
+    const dp=state.plan[day]||{};
+    Object.entries(dp).filter(([_,v])=>v.selected).forEach(([id,v])=>{
+      const s=ALL_STORES[parseInt(id)],so=orderData.storeOrders?.[parseInt(id)];
+      s1.push({'業務員':state.rep,'星期':DAY_LABELS[day],'日期':fmt(NWD[day]),'類型':'既有店','通路':catLabel(s.category),'店名':s.name,'等級':s.grade,'上架':s.listed,'地址':s.address,'電話':s.phone||'','備註':v.note||'','當週訂單數':so?so.count:'','當週成交金額':so?so.amount:''});
+    });
+    (state.newStores[day]||[]).forEach(s=>{
+      s1.push({'業務員':state.rep,'星期':DAY_LABELS[day],'日期':fmt(NWD[day]),'類型':'小店開發','通路':'','店名':s.name,'等級':'','上架':'','地址':s.addr||'','電話':s.phone||'','備註':s.note||'','當週訂單數':'','當週成交金額':''});
+    });
+  });
+  const ws1=XLSX.utils.json_to_sheet(s1);ws1['!cols']=[{wch:8},{wch:6},{wch:12},{wch:8},{wch:10},{wch:22},{wch:5},{wch:5},{wch:36},{wch:14},{wch:18},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws1,'當週拜訪計劃');
+
+  // Sheet 2~4: 門市拜訪紀錄 — 依通路拆成三個 Sheet
+  const h=getHistory(),visited=new Set();
+  DAY_NAMES.forEach(day=>{const dp=state.plan[day]||{};Object.entries(dp).forEach(([id,v])=>{if(v.selected)visited.add(parseInt(id))})});
+  const channels=[{cat:'東森寵物',label:'東森寵物'},{cat:'魚中魚',label:'魚中魚'},{cat:'寵物公園',label:'萬達'},{cat:'小店客戶',label:'小店客戶'}];
+  channels.forEach(ch=>{
+    const rows=ALL_STORES.filter(s=>s.category===ch.cat).map(s=>{
+      let cumT=0;for(const[wk,reps]of Object.entries(h)){if(reps[s.salesRep]?.storeIds?.includes(s.id))cumT++}
+      const so=orderData.storeOrders?.[s.id];
+      const row={'店名':s.name,'等級':s.grade,'上架':s.listed,'地址':s.address,'負責業務員':s.salesRep};
+      row[visitHeader]=visited.has(s.id)?'✓':'';
+      row[cumHeader]=cumT;
+      row['當週訂單數']=so?so.count:'';
+      row['當週成交金額(NT$)']=so?so.amount:'';
+      return row;
+    });
+    const ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[{wch:22},{wch:5},{wch:5},{wch:36},{wch:10},{wch:14},{wch:18},{wch:10},{wch:14}];
+    XLSX.utils.book_append_sheet(wb,ws,ch.label+'拜訪紀錄');
+  });
+
+  // Sheet 5: 是否上架 拜訪頻率
+  const freqRows=ALL_STORES.map(s=>{
+    let cumT=0;for(const[wk,reps]of Object.entries(h)){if(reps[s.salesRep]?.storeIds?.includes(s.id))cumT++}
+    const row={'通路':catLabel(s.category),'店名':s.name,'等級':s.grade,'是否上架':s.listed||'','負責業務員':s.salesRep};
+    row[cumHeader]=cumT;
+    row[visitHeader]=visited.has(s.id)?'✓':'';
+    return row;
+  });
+  const wsF=XLSX.utils.json_to_sheet(freqRows);wsF['!cols']=[{wch:10},{wch:22},{wch:5},{wch:8},{wch:10},{wch:18},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,wsF,'上架與拜訪頻率');
+
+  // Sheet 6: 等級拜訪統計
+  const cats=['東森寵物','魚中魚','寵物公園','小店客戶'],grades=['A','B','C','D'],s3=[];
+  cats.forEach(cat=>{grades.forEach(grade=>{
+    const sub=ALL_STORES.filter(s=>s.category===cat&&s.grade===grade);if(!sub.length)return;
+    let wfW=0,ttW=0,wfC=0,ttC=0,oC=0,oA=0;
+    sub.forEach(s=>{if(visited.has(s.id)){if(s.salesRep==='文峰')wfW++;else ttW++}
+      for(const[wk,reps]of Object.entries(h)){if(reps['文峰']?.storeIds?.includes(s.id))wfC++;if(reps['Titan']?.storeIds?.includes(s.id))ttC++}
+      const so=orderData.storeOrders?.[s.id];if(so){oC+=so.count;oA+=so.amount}});
+    const row={'通路':catLabel(cat),'等級':grade,'門店總數':sub.length};
+    row[wkShort+'文峰拜訪']=wfW;row[wkShort+'Titan拜訪']=ttW;
+    row['文峰累計拜訪']=wfC;row['Titan累計拜訪']=ttC;
+    row['當週訂單數']=oC;row['當週成交金額']=oA;
+    s3.push(row);
+  })});
+  const ws3=XLSX.utils.json_to_sheet(s3);ws3['!cols']=[{wch:10},{wch:5},{wch:8},{wch:16},{wch:16},{wch:12},{wch:12},{wch:10},{wch:14}];
+  XLSX.utils.book_append_sheet(wb,ws3,'等級拜訪統計');
+
+  return wb;
+}
+
+function downloadExcel(){
+  const wb=generateExcel();
+  const fileName=`${weekKey}_${state.rep}_拜訪計劃表.xlsx`;
+  XLSX.writeFile(wb,fileName);
+  // 同步上傳同一份 Excel 到 Google Drive
+  const xlsxData=XLSX.write(wb,{type:'base64',bookType:'xlsx'});
+  callAPI({action:'uploadExcel',weekKey,fileName,base64Data:xlsxData})
+    .then(r=>{if(r)showToast('✅ Excel 已同步上傳雲端');else showToast('⚠️ 雲端上傳失敗',true)});
+}
+
+function closeModal(){document.getElementById('confirmModal').classList.remove('show');clearDraft()}
+
+// INIT
+(function(){
+  // Setup drag-drop for order upload
+  const uz=document.getElementById('orderUpload');
+  uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('dragover')});
+  uz.addEventListener('dragleave',()=>uz.classList.remove('dragover'));
+  uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('dragover');if(e.dataTransfer.files.length)handleOrderFile(e.dataTransfer.files[0])});
+
+  if(loadDraft()&&state.rep){
+    document.getElementById('headerInfo').textContent=`業務員：${state.rep}（暫存）`;
+    document.getElementById('draftBadge').style.display='inline-flex';document.getElementById('btnLogout').style.display='';document.getElementById('btnReset').style.display='';
+    goStep(2);
+  } else {document.getElementById('pwdInput').focus()}
+})();
+</script>
+</body>
+</html>
